@@ -43,8 +43,9 @@ get '/' do
 end
 
 get '/:ref' do
-  ref = params[:ref].gsub(/\+/, ' ')
-  if ranges = BibleRef::Reference.new(ref).ranges
+  ref_string = params[:ref].gsub(/\+/, ' ')
+  ref = BibleRef::Reference.new(ref_string)
+  if ranges = ref.ranges
     if verses = get_verses(ranges)
       verses.map! do |v|
         {
@@ -56,7 +57,7 @@ get '/:ref' do
         }
       end
       {
-        reference: ref,
+        reference: ref.normalize,
         verses: verses,
         text: verses.map { |v| v[:text] }.join,
         translation_id: 'WEB',

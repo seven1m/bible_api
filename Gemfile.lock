@@ -1,7 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    bible_ref (0.1.0)
+    bible_ref (0.2.0)
       parslet (~> 1.6)
     blankslate (2.1.2.4)
     mini_portile (0.6.0)
