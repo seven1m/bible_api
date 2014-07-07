@@ -30,19 +30,19 @@ def get_verses(ranges)
 end
 
 get '/' do
-  <<-HTML
-    <!doctype html>
-    <h1>bible-api.com</h1>
-    <p><a href="https://github.com/seven1m/bible_api">github.com/seven1m/bible_api</a></p>
-    <p>examples:</p>
-    <ul>
-      <li><a href="/john%203:16">john 3:16</a></li>
-      <li><a href="/romans+12:1-2">romans 12:1-2</a></li>
-    </ul>
-  HTML
+  content_type 'application/json'
+  {
+    url: 'http://bible-api.com',
+    description: 'RESTful API for querying bible passages from the World English Bible.',
+    examples: [
+      'http://bible-api.com/john 3:16',
+      'http://bible-api.com/romans 12:1-2'
+    ]
+  }.to_json
 end
 
 get '/:ref' do
+  content_type 'application/json'
   ref_string = params[:ref].gsub(/\+/, ' ')
   ref = BibleRef::Reference.new(ref_string)
   if ranges = ref.ranges
