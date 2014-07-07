@@ -33,8 +33,16 @@ get '/' do
   content_type 'application/json; charset=utf-8'
   {
     url: 'http://bible-api.com',
-    description: 'RESTful API for querying bible passages from the World English Bible.',
-    source_code: 'https://github.com/seven1m/bible_api',
+    description: 'RESTful JSON API for querying bible passages from the World English Bible.',
+    creator: {
+      name: 'Tim Morgan',
+      url: 'http://timmorgan.org',
+      twitter_url: 'https://twitter.com/seven1m'
+    },
+    source_code: {
+      url: 'https://github.com/seven1m/bible_api',
+      bugs: 'https://github.com/seven1m/bible_api/issues'
+    },
     examples: {
       'single verse' => 'http://bible-api.com/john+3:16',
       'verse range' => 'http://bible-api.com/romans+12:1-2',
