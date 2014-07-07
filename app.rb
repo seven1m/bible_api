@@ -24,6 +24,19 @@ def get_verses(ranges)
   all
 end
 
+get '/' do
+  <<-HTML
+    <!doctype html>
+    <h1>bible-api.com</h1>
+    <p><a href="https://github.com/seven1m/bible_api">github.com/seven1m/bible_api</a></p>
+    <p>examples:</p>
+    <ul>
+      <li><a href="/john%203:16">john 3:16</a></li>
+      <li><a href="/romans+12:1-2">romans 12:1-2</a></li>
+    </ul>
+  HTML
+end
+
 get '/:ref' do
   ref = params[:ref].gsub(/\+/, ' ')
   if ranges = BibleRef::Reference.new(ref).ranges
