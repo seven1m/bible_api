@@ -34,9 +34,17 @@ get '/' do
   {
     url: 'http://bible-api.com',
     description: 'RESTful API for querying bible passages from the World English Bible.',
-    examples: [
-      'http://bible-api.com/john 3:16',
-      'http://bible-api.com/romans 12:1-2'
+    source_code: 'https://github.com/seven1m/bible_api',
+    examples: {
+      'single verse' => 'http://bible-api.com/john+3:16',
+      'verse range' => 'http://bible-api.com/romans+12:1-2',
+      'the kitchen sink' => 'http://bible-api.com/romans+12:1-2,5-7,9,13:1-9&10',
+      'unknown' => 'http://bible-api.com/mormon'
+    },
+    notes: [
+      "JSONView for Chrome and JsonShow for Firefox are good JSON-viewing plugins in your browser.",
+      "You don't have to use plus (+) signs for spaces. We did here so JsonShow will auto-link them.",
+      "All passages returned are of the World English Bible (WEB) translation, which is in the public domain. Copy and publish freely!"
     ]
   }.to_json
 end
