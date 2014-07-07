@@ -52,7 +52,10 @@ get '/:ref' do
     {
       reference: ref,
       verses: verses,
-      text: verses.map { |v| v[:text] }.join
+      text: verses.map { |v| v[:text] }.join,
+      translation_id: 'WEB',
+      translation_name: 'World English Bible',
+      translation_note: 'The World English Bible, a Modern English update of the American Standard Version of the Holy Bible, is in the public domain. Copy and publish it freely.'
     }.to_json
   else
     status 404
