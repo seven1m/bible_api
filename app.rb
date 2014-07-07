@@ -30,7 +30,7 @@ def get_verses(ranges)
 end
 
 get '/' do
-  content_type 'application/json'
+  content_type 'application/json; charset=utf-8'
   {
     url: 'http://bible-api.com',
     description: 'RESTful API for querying bible passages from the World English Bible.',
@@ -50,7 +50,7 @@ get '/' do
 end
 
 get '/:ref' do
-  content_type 'application/json'
+  content_type 'application/json; charset=utf-8'
   ref_string = params[:ref].gsub(/\+/, ' ')
   ref = BibleRef::Reference.new(ref_string)
   if ranges = ref.ranges
