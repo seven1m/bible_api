@@ -6,6 +6,7 @@ GEM
     blankslate (2.1.2.4)
     mini_portile (0.6.0)
     mysql2 (0.3.16)
+    newrelic_rpm (3.9.0.229)
     nokogiri (1.6.2.1)
       mini_portile (= 0.6.0)
     parslet (1.6.1)
@@ -28,6 +29,7 @@ PLATFORMS
 DEPENDENCIES
   bible_ref
   mysql2
+  newrelic_rpm
   sequel
   sinatra
   usfx
