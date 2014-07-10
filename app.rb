@@ -5,6 +5,8 @@ Bundler.require
 
 DB = Sequel.connect(ENV['BIBLE_API_DB'])
 
+set :protection, except: [:json_csrf]
+
 def get_verse_id(ref)
   record = DB[
     'select id from verses where book_id = ? and chapter = ? and verse = ?',
