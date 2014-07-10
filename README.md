@@ -5,6 +5,7 @@ Sinatra web app that serves RESTful JSON web API for the World English Bible.
 
 ```
 mysql -uroot "create database bible_api; grant all on bible_api.* to user@localhost identified by 'password';"
+BIBLE_API_DB="mysql2://user:password@localhost/bible_api" ruby import.rb
 BIBLE_API_DB="mysql2://user:password@localhost/bible_api" ruby app.rb
 ```
 
