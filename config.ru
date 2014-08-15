@@ -1,5 +1,6 @@
 require 'bundler/setup'
 require 'sinatra'
+require "sinatra/jsonp"
 require './app'
 
 root_dir = File.dirname(__FILE__)

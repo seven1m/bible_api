@@ -33,7 +33,7 @@ end
 
 get '/' do
   content_type 'application/json; charset=utf-8'
-  {
+  response = {
     url: 'http://bible-api.com',
     description: 'RESTful JSON API for querying bible passages from the World English Bible.',
     creator: {
@@ -56,7 +56,8 @@ get '/' do
       "You don't have to use plus (+) signs for spaces. We did here so JsonShow will auto-link them.",
       "All passages returned are of the World English Bible (WEB) translation, which is in the public domain. Copy and publish freely!"
     ]
-  }.to_json
+  }
+  JSONP response
 end
 
 get '/:ref' do
@@ -74,20 +75,23 @@ get '/:ref' do
           text:      v[:text]
         }
       end
-      {
+      response = {
         reference: ref.normalize,
         verses: verses,
         text: verses.map { |v| v[:text] }.join,
         translation_id: 'WEB',
         translation_name: 'World English Bible',
         translation_note: 'The World English Bible, a Modern English update of the American Standard Version of the Holy Bible, is in the public domain. Copy and publish it freely.'
-      }.to_json
+      }
+      JSONP response
     else
       status 404
-      { error: 'not found' }.to_json
+      response = { error: 'not found' }
+      JSONP response
     end
   else
     status 404
-    { error: 'not found' }.to_json
+    response = { error: 'not found' }
+    JSONP response
   end
 end
