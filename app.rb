@@ -49,6 +49,7 @@ get '/' do
       'single verse' => 'http://bible-api.com/john+3:16',
       'verse range' => 'http://bible-api.com/romans+12:1-2',
       'the kitchen sink' => 'http://bible-api.com/romans+12:1-2,5-7,9,13:1-9&10',
+      'jsonp' => 'http://bible-api.com/john+3:16?callback=func',
       'unknown' => 'http://bible-api.com/mormon'
     },
     notes: [
