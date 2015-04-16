@@ -34,12 +34,13 @@ end
 
 get '/' do
   content_type 'application/json; charset=utf-8'
+  translations = DB['select identifier, name from translations'].each_with_object({}) { |t, h| h[t[:identifier]] = t[:name] }
   response = {
     url: 'http://bible-api.com',
     description: 'RESTful JSON API for querying bible passages from the World English Bible.',
     creator: {
       name: 'Tim Morgan',
-      url: 'http://timmorgan.org',
+      url: 'https://timmorgan.org',
       twitter_url: 'https://twitter.com/seven1m'
     },
     source_code: {
@@ -47,16 +48,17 @@ get '/' do
       bugs: 'https://github.com/seven1m/bible_api/issues'
     },
     examples: {
-      'single verse' => 'http://bible-api.com/john+3:16',
-      'verse range' => 'http://bible-api.com/romans+12:1-2',
-      'the kitchen sink' => 'http://bible-api.com/romans+12:1-2,5-7,9,13:1-9&10',
-      'jsonp' => 'http://bible-api.com/john+3:16?callback=func',
-      'unknown' => 'http://bible-api.com/mormon'
+      'single verse'          => 'http://bible-api.com/john+3:16',
+      'verse range'           => 'http://bible-api.com/romans+12:1-2',
+      'the kitchen sink'      => 'http://bible-api.com/romans+12:1-2,5-7,9,13:1-9&10',
+      'jsonp'                 => 'http://bible-api.com/john+3:16?callback=func',
+      'unknown'               => 'http://bible-api.com/mormon',
+      'different translation' => 'http://bible-api.com/john+3:16?translation=RCCV'
     },
+    translations: translations,
     notes: [
-      "JSONView for Chrome and JsonShow for Firefox are good JSON-viewing plugins in your browser.",
-      "You don't have to use plus (+) signs for spaces. We did here so JsonShow will auto-link them.",
-      "All passages returned are of the World English Bible (WEB) translation, which is in the public domain. Copy and publish freely!"
+      "JSONView is good JSON-viewing plugin for your browser.",
+      "You don't have to use plus (+) signs for spaces. We did here so JSONView will auto-link them.",
     ]
   }
   JSONP response
