@@ -34,7 +34,7 @@ end
 
 get '/' do
   @translations = DB['select identifier, name from translations'].each_with_object({}) { |t, h| h[t[:identifier]] = t[:name] }
-  @host = request.env['REQUEST_URI'].split('?').first
+  @host = request.env['SCRIPT_URI'].split('?').first
   erb :index
 end
 
