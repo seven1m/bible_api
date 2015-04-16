@@ -3,7 +3,7 @@ require 'json'
 
 Bundler.require
 
-DB = Sequel.connect(ENV['BIBLE_API_DB'])
+DB = Sequel.connect(ENV['BIBLE_API_DB'], charset: 'utf8')
 
 set :protection, except: [:json_csrf]
 

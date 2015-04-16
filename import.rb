@@ -26,14 +26,14 @@ class Importer
   end
 end
 
-DB.create_table :translations do
+DB.create_table! :translations, charset: 'utf8' do
   primary_key :id
   String :identifier
   String :name
   String :license
 end
 
-DB.create_table :verses do
+DB.create_table! :verses, charset: 'utf8' do
   primary_key :id
   Fixnum :book_num
   String :book_id
