@@ -1,0 +1,57 @@
+<h1>bible-api.com</h1>
+
+<p>This is a tiny little web app that provides a JSON API for grabbing bible verses and passages.</p>
+
+<p>This services is provided by <a href="https://timmorgan.org">Tim Morgan</a>.
+You can get the source code for this app and the open data for its database at
+<a href="https://github.com/seven1m/bible_api">https://github.com/seven1m/bible_api</a>.</p>
+
+<h2>Usage</h2>
+
+<pre><code><%= @host %>BOOK+CHAPTER:VERSE</code></pre>
+
+<p>You can get pretty crazy with book names and with verse ranges using commas, hyphens, and semicolons.
+It mostly just works. (Though, if it doesn't, you can
+<a href="https://github.com/seven1m/bible_api/issues/new">submit an issue</a> and let us know!)</p>
+
+<h2>Translations</h2>
+
+<table>
+  <% @translations.each do |identifier, name| %>
+    <tr>
+      <td><%= identifier %></td>
+      <td><%= name %></td>
+    </tr>
+  <% end %>
+</table>
+
+<p>Help us add more freely licensed and public domain translations by
+<a href="https://github.com/seven1m/bible_api/pulls">submitting a pull request</a>.</p>
+
+<h2>Examples</h2>
+
+<dl>
+  <dt>single verse</dt>
+  <dd><a href="<%= @host %>john 3:16"><%= @host %>john 3:16</a></dd>
+
+  <dt>abbreviated book name</dt>
+  <dd><a href="<%= @host %>jn 3:16"><%= @host %>jn 3:16</a></dd>
+
+  <dt>verse range</dt>
+  <dd><a href="<%= @host %>romans+12:1-2"><%= @host %>romans+12:1-2</a></dd>
+
+  <dt>multiple ranges</dt>
+  <dd><a href="<%= @host %>romans 12:1-2,5-7,9,13:1-9&10"><%= @host %>romans 12:1-2,5-7,9,13:1-9&10</a></dd>
+
+  <dt>different translation</dt>
+  <dd><a href="<%= @host %>john 3:16?translation=RCCV"><%= @host %>john 3:16?translation=RCCV</a></dd>
+
+  <dt>jsonp</dt>
+  <dd><a href="<%= @host %>john+3:16?callback=func"><%= @host %>john+3:16?callback=func</a></dd>
+</dl>
+
+<h2>Terms of Use</h2>
+
+<p>This service is free for anyone to use as long as you don't abuse my server.
+I reserve the right to block any IP that hits this service too frequently and degrades the service for others.
+Consider caching the result in your own app to help me out.</p>
