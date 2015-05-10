@@ -1,13 +1,8 @@
-GIT
-  remote: git://github.com/seven1m/bible_parser.git
-  revision: f74302ff0a9762c62142c93f8514707244f8fbf8
-  specs:
-    bible_parser (0.1.0)
-      nokogiri (>= 1.6.0)
-
 GEM
   remote: https://rubygems.org/
   specs:
+    bible_parser (1.0.0)
+      nokogiri (>= 1.6.0)
     bible_ref (0.2.1)
       parslet (~> 1.6)
     blankslate (2.1.2.4)
@@ -36,7 +31,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bible_parser!
+  bible_parser
   bible_ref
   mysql2
   newrelic_rpm
