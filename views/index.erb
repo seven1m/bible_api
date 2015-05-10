@@ -14,26 +14,6 @@ You can get the source code for this app and the open data for its database at
 It mostly just works. (Though, if it doesn't, you can
 <a href="https://github.com/seven1m/bible_api/issues/new">submit an issue</a> and let us know!)</p>
 
-<h2>Translations</h2>
-
-<table>
-  <tr>
-    <th>Language</th>
-    <th>Name</th>
-    <th>Identifier</th>
-  </tr>
-  <% @translations.each do |translation| %>
-    <tr>
-      <td><%= translation[:language] %></td>
-      <td><%= translation[:name] %></td>
-      <td><%= translation[:identifier] %></td>
-    </tr>
-  <% end %>
-</table>
-
-<p>Help us add more freely licensed and public domain translations by
-<a href="https://github.com/seven1m/bible_api/pulls">submitting a pull request</a>.</p>
-
 <h2>Examples</h2>
 
 <dl>
@@ -56,8 +36,31 @@ It mostly just works. (Though, if it doesn't, you can
   <dd><a href="<%= @host %>john+3:16?callback=func"><%= @host %>john+3:16?callback=func</a></dd>
 </dl>
 
+<h2>Translations</h2>
+
+<table>
+  <tr>
+    <th>Language</th>
+    <th>Name</th>
+    <th>Identifier</th>
+  </tr>
+  <% @translations.each do |translation| %>
+    <tr>
+      <td><%= translation[:language] %></td>
+      <td><%= translation[:name] %></td>
+      <td>
+        <a href="/john+3:16?translation=<%= translation[:identifier] %>"><%= translation[:identifier] %></a>
+        <% if translation[:identifier] == 'web' %>(default)<% end %>
+      </td>
+    </tr>
+  <% end %>
+</table>
+
+<p>Help us add more bible translations! Contribute to our <a href="https://github.com/seven1m/open-bibles">repository of open and freely-licensed bibles</a>.</p>
+
 <h2>Terms of Use</h2>
 
 <p>This service is free for anyone to use as long as you don't abuse my server.
-I reserve the right to block any IP that hits this service too frequently and degrades the service for others.
-Consider caching the result in your own app to help me out.</p>
+I reserve the right to block any IP that hits this service too frequently and degrades the service for others. I make no guarantees about this service's availability, quality, or correctness.</p>
+
+<p>If you need more reliable service, remember you can grab the code and data for this site <a href="https://github.com/seven1m/bible_api">here</a> and host it yourself!</p>
