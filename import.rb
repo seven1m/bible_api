@@ -1,13 +1,13 @@
 require 'bundler/setup'
 require 'sequel'
 require 'mysql2'
-require 'bible_xml'
+require 'bible_parser'
 
 DB = Sequel.connect(ENV['BIBLE_API_DB'])
 
 class Importer
   def import(path, translation_id)
-    bible = BibleXML.new(File.open(path))
+    bible = BibleParser.new(File.open(path))
     bible.each_verse do |verse|
       data = verse.to_h
       data[:book] = data.delete(:book_title)
