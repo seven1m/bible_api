@@ -17,10 +17,16 @@ It mostly just works. (Though, if it doesn't, you can
 <h2>Translations</h2>
 
 <table>
-  <% @translations.each do |identifier, name| %>
+  <tr>
+    <th>Language</th>
+    <th>Name</th>
+    <th>Identifier</th>
+  </tr>
+  <% @translations.each do |translation| %>
     <tr>
-      <td><%= identifier %></td>
-      <td><%= name %></td>
+      <td><%= translation[:language] %></td>
+      <td><%= translation[:name] %></td>
+      <td><%= translation[:identifier] %></td>
     </tr>
   <% end %>
 </table>
@@ -44,7 +50,7 @@ It mostly just works. (Though, if it doesn't, you can
   <dd><a href="<%= @host %>romans 12:1-2,5-7,9,13:1-9&10"><%= @host %>romans 12:1-2,5-7,9,13:1-9&10</a></dd>
 
   <dt>different translation</dt>
-  <dd><a href="<%= @host %>john 3:16?translation=RCCV"><%= @host %>john 3:16?translation=RCCV</a></dd>
+  <dd><a href="<%= @host %>john 3:16?translation=kjv"><%= @host %>john 3:16?translation=kjv</a></dd>
 
   <dt>jsonp</dt>
   <dd><a href="<%= @host %>john+3:16?callback=func"><%= @host %>john+3:16?callback=func</a></dd>

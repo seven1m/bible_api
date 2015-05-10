@@ -1,0 +1,3 @@
+[submodule "bibles"]
+	path = bibles
+	url = git@github.com:seven1m/open-bibles.git

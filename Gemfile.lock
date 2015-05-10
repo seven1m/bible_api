@@ -1,3 +1,10 @@
+GIT
+  remote: git://github.com/seven1m/bible_xml.git
+  revision: ab186efb3398df0f40a8f8537d2f954c191e1b62
+  specs:
+    bible_xml (0.1.0)
+      nokogiri (>= 1.6.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -24,17 +31,15 @@ GEM
       multi_json (~> 1.8)
       sinatra (~> 1.0)
     tilt (1.4.1)
-    usfx (1.0.0)
-      nokogiri (>= 1.6.0)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   bible_ref
+  bible_xml!
   mysql2
   newrelic_rpm
   sequel
   sinatra
   sinatra-jsonp
-  usfx
