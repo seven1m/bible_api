@@ -48,7 +48,7 @@ get '/:ref' do
     response = { error: 'translation not found' }
     return JSONP(response)
   end
-  ref = BibleRef::Reference.new(ref_string, language: translation[:language_code])
+  ref = BibleRef::Reference.new(ref_string, language: translation[:language_code]) rescue BibleRef::Reference.new(ref_string)
   if ranges = ref.ranges
     if verses = get_verses(ranges, translation[:id])
       verses.map! do |v|
