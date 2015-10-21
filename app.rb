@@ -43,6 +43,7 @@ get '/:ref' do
   content_type 'application/json; charset=utf-8'
   ref_string = params[:ref].gsub(/\+/, ' ')
   translation = DB['select * from translations where identifier = ?', params[:translation] || 'WEB'].first
+  vn = params[:verse_numbers]
   unless translation
     status 404
     response = { error: 'translation not found' }
@@ -60,10 +61,15 @@ get '/:ref' do
           text:      v[:text]
         }
       end
+      if vn == "true"
+        verse_text = verses.map { |v| '(' + v[:verse].to_s + ') ' + v[:text] }.join
+      else
+        verse_text = verses.map { |v| v[:text] }.join
+      end
       response = {
         reference: ref.normalize,
         verses: verses,
-        text: verses.map { |v| v[:text] }.join,
+        text: verse_text,
         translation_id: translation[:identifier],
         translation_name: translation[:name],
         translation_note: translation[:license]
