@@ -52,7 +52,7 @@ It mostly just works. (Though, if it doesn't, you can
       <td><%= translation[:language] %></td>
       <td><%= translation[:name] %></td>
       <td>
-        <a href="/john+3:16?translation=<%= translation[:identifier] %>"><%= translation[:identifier] %></a>
+        <a href="/<%= @books[translation[:id]] %>+3:16?translation=<%= translation[:identifier] %>"><%= translation[:identifier] %></a>
         <% if translation[:identifier] == 'web' %>(default)<% end %>
       </td>
     </tr>

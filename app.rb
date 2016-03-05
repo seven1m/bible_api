@@ -34,7 +34,10 @@ def get_verses(ranges, translation_id)
 end
 
 get '/' do
-  @translations = DB['select identifier, language, name from translations order by language, name']
+  @translations = DB['select id, identifier, language, name from translations order by language, name']
+  @books = DB["select translation_id, book from verses where book_id = 'JHN' group by translation_id"].each_with_object({}) do |book, hash|
+    hash[book[:translation_id]] = book[:book]
+  end
   @host = (request.env['SCRIPT_URI'] || request.env['REQUEST_URI']).split('?').first
   erb :index
 end
