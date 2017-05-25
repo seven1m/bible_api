@@ -36,7 +36,7 @@ DB.create_table? :verses, charset: 'utf8' do
   String :book
   Fixnum :chapter
   Fixnum :verse
-  String :text
+  String :text, text: true
   Fixnum :translation_id
 end
 
