@@ -28,4 +28,4 @@ http://localhost:4567/John+3:16
 }
 ```
 
-Copyright [Tim Morgan](http://timmorgan.org). See LICENSE.
+Copyright [Tim Morgan](http://timmorgan.org). Licensed under The MIT License (MIT). See LICENSE for more info.
