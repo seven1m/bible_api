@@ -9,7 +9,6 @@ GEM
     multi_json (1.13.1)
     mustermann (1.0.3)
     mysql2 (0.5.2)
-    newrelic_rpm (6.1.0.352)
     nokogiri (1.10.1)
       mini_portile2 (~> 2.4.0)
     parslet (1.8.2)
@@ -34,7 +33,6 @@ DEPENDENCIES
   bible_parser
   bible_ref
   mysql2
-  newrelic_rpm
   sequel
   sinatra
   sinatra-jsonp
