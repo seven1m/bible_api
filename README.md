@@ -1,14 +1,13 @@
-bible_api
-=========
+# bible\_api
 
 Sinatra web app that serves RESTful JSON web API for the World English Bible.
 
 ```
 mysql -uroot -e "create database bible_api; grant all on bible_api.* to user@localhost identified by 'password';"
-BIBLE_API_DB="mysql2://user:password@localhost/bible_api" ruby import.rb
-BIBLE_API_DB="mysql2://user:password@localhost/bible_api" ruby app.rb
+export BIBLE_API_DB="mysql2://user:password@localhost/bible_api"
+ruby import.rb
+ruby app.rb
 ```
-
 
 http://localhost:4567/John+3:16
 
@@ -28,4 +27,4 @@ http://localhost:4567/John+3:16
 }
 ```
 
-Copyright [Tim Morgan](http://timmorgan.org). Licensed under The MIT License (MIT). See LICENSE for more info.
+Copyright [Tim Morgan](https://timmorgan.org). Licensed under The MIT License (MIT). See LICENSE for more info.
