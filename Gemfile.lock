@@ -29,9 +29,6 @@ GEM
       rack-protection (= 2.0.5)
       sinatra (= 2.0.5)
       tilt (>= 1.3, < 3)
-    sinatra-jsonp (0.5.0)
-      multi_json (~> 1.8)
-      sinatra (>= 1.0)
     tilt (2.0.9)
 
 PLATFORMS
@@ -44,7 +41,6 @@ DEPENDENCIES
   sequel
   sinatra
   sinatra-contrib
-  sinatra-jsonp
 
 BUNDLED WITH
    1.17.3

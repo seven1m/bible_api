@@ -30,6 +30,34 @@ def get_verses(ranges, translation_id)
   all
 end
 
+# pulled from sinatra-jsonp and modified to return a UTF-8 charset
+module Sinatra
+  module Jsonp
+    def jsonp(*args)
+      if args.size > 0
+        data = MultiJson.dump args[0], :pretty => settings.respond_to?(:json_pretty) && settings.json_pretty
+        if args.size > 1
+          callback = args[1].to_s
+        else
+          ['callback','jscallback','jsonp','jsoncallback'].each do |x|
+            callback = params.delete(x) unless callback
+          end
+        end
+        if callback
+          callback.tr!('^a-zA-Z0-9_$\.', '')
+          content_type 'text/javascript', charset: 'utf-8'
+          response = "#{callback}(#{data})"
+        else
+          content_type 'application/json', charset: 'utf-8'
+          response = data
+        end
+        response
+      end
+    end
+  end
+  helpers Jsonp
+end
+
 get '/' do
   @translations = DB['select id, identifier, language, name from translations order by language, name']
   books = DB["select translation_id, book from verses where book_id = 'JHN' group by translation_id"]
@@ -41,14 +69,14 @@ get '/' do
 end
 
 get '/:ref' do
-  content_type 'application/json; charset=utf-8'
+  content_type 'application/json', charset: 'utf-8'
   ref_string = params[:ref].tr('+', ' ')
   translation = DB['select * from translations where identifier = ?', params[:translation] || 'WEB'].first
   vn = params[:verse_numbers]
   unless translation
     status 404
     response = { error: 'translation not found' }
-    return JSONP(response)
+    return jsonp(response)
   end
   ref = BibleRef::Reference.new(ref_string, language: translation[:language_code])
   if (ranges = ref.ranges)
@@ -83,5 +111,5 @@ get '/:ref' do
     status 404
     response = { error: 'not found' }
   end
-  JSONP response
+  jsonp response
 end
