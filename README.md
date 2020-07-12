@@ -1,6 +1,8 @@
 # bible\_api
 
 Sinatra web app that serves RESTful JSON web API for the World English Bible.
+[Api Endpoints](https://bible-api.com/)
+
 
 ```
 mysql -uroot -e "create database bible_api; grant all on bible_api.* to user@localhost identified by 'password';"
