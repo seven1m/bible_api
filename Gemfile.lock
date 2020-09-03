@@ -1,10 +1,10 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    backports (3.18.1)
+    backports (3.18.2)
     bible_parser (1.0.0)
       nokogiri (>= 1.6.0)
-    bible_ref (1.4.0)
+    bible_ref (1.5.0)
       parslet (~> 1.6)
     mini_portile2 (2.4.0)
     multi_json (1.15.0)
@@ -18,7 +18,7 @@ GEM
     rack-protection (2.0.8.1)
       rack
     ruby2_keywords (0.0.2)
-    sequel (5.35.0)
+    sequel (5.36.0)
     sinatra (2.0.8.1)
       mustermann (~> 1.0)
       rack (~> 2.0)
