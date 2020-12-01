@@ -30,21 +30,23 @@ def get_verses(ranges, translation_id)
   all
 end
 
-# Use /random to generate a random verse.
+# Use /?random=verse to generate a random verse.
 # You can generate one from a specific topic by
-# adding :topic_name afterwards.
-# i.e. - /random:hope
+# passing a topic as the value.
+# i.e. - /?random=hope
 def get_random_verse
     json = File.read('random_verses.json')
     obj = JSON.parse(json)
 
     topics = ["faith", "hope", "love"]
-    if params[:ref].match(":")
-        topic_array = topics.select {|t| params[:ref].match("random:#{t}")}
-        topic = topic_array.pop
-    else
+    if params[:random] == "verse"
         topic = topics.shuffle.first
+    elsif topics.include?(params[:random])
+        topic = params[:random]
+    else
+        return nil
     end
+
     obj[topic].shuffle.first
 end
 
@@ -77,57 +79,72 @@ module Sinatra
 end
 
 get '/' do
-  @translations = DB['select id, identifier, language, name from translations order by language, name']
-  books = DB["select translation_id, book from verses where book_id = 'JHN' group by translation_id"]
-  @books = books.each_with_object({}) do |book, hash|
-    hash[book[:translation_id]] = book[:book]
+  if params[:random]
+      ref_string = get_random_verse
+      if ref_string.nil?
+          status 404
+          response = { error: 'Unrecognized topic' }
+          return jsonp(response)
+      else
+          display_verse_from(ref_string)
+      end
+  else
+      @translations = DB['select id, identifier, language, name from translations order by language, name']
+      books = DB["select translation_id, book from verses where book_id = 'JHN' group by translation_id"]
+      @books = books.each_with_object({}) do |book, hash|
+        hash[book[:translation_id]] = book[:book]
+      end
+      @host = (request.env['SCRIPT_URI'] || request.env['REQUEST_URI']).split('?').first
+      erb :index
   end
-  @host = (request.env['SCRIPT_URI'] || request.env['REQUEST_URI']).split('?').first
-  erb :index
 end
 
 get '/:ref' do
   content_type 'application/json', charset: 'utf-8'
-  ref_string = params[:ref].downcase.match('random') ? get_random_verse : params[:ref].tr('+', ' ')
-  translation = DB['select * from translations where identifier = ?', params[:translation] || 'WEB'].first
-  vn = params[:verse_numbers]
-  unless translation
-    status 404
-    response = { error: 'translation not found' }
-    return jsonp(response)
-  end
-  ref = BibleRef::Reference.new(ref_string, language: translation[:language_code])
-  if (ranges = ref.ranges)
-    if (verses = get_verses(ranges, translation[:id]))
-      verses.map! do |v|
-        {
-          book_id:   v[:book_id],
-          book_name: v[:book],
-          chapter:   v[:chapter],
-          verse:     v[:verse],
-          text:      v[:text]
+  ref_string = params[:ref].tr('+', ' ')
+  display_verse_from(ref_string)
+end
+
+def display_verse_from(ref_string)
+    translation = DB['select * from translations where identifier = ?', params[:translation] || 'WEB'].first
+    vn = params[:verse_numbers]
+    unless translation
+      status 404
+      response = { error: 'translation not found' }
+      return jsonp(response)
+    end
+    ref = BibleRef::Reference.new(ref_string, language: translation[:language_code])
+    if (ranges = ref.ranges)
+      if (verses = get_verses(ranges, translation[:id]))
+        verses.map! do |v|
+          {
+            book_id:   v[:book_id],
+            book_name: v[:book],
+            chapter:   v[:chapter],
+            verse:     v[:verse],
+            text:      v[:text]
+          }
+        end
+        verse_text = if vn == 'true'
+                       verses.map { |v| '(' + v[:verse].to_s + ') ' + v[:text] }.join
+                     else
+                       verses.map { |v| v[:text] }.join
+                     end
+        response = {
+          reference:        ref.normalize,
+          verses:           verses,
+          text:             verse_text,
+          translation_id:   translation[:identifier],
+          translation_name: translation[:name],
+          translation_note: translation[:license]
         }
+      else
+        status 404
+        response = { error: 'not found' }
       end
-      verse_text = if vn == 'true'
-                     verses.map { |v| '(' + v[:verse].to_s + ') ' + v[:text] }.join
-                   else
-                     verses.map { |v| v[:text] }.join
-                   end
-      response = {
-        reference:        ref.normalize,
-        verses:           verses,
-        text:             verse_text,
-        translation_id:   translation[:identifier],
-        translation_name: translation[:name],
-        translation_note: translation[:license]
-      }
     else
       status 404
       response = { error: 'not found' }
     end
-  else
-    status 404
-    response = { error: 'not found' }
-  end
-  jsonp response
+    jsonp response
 end
