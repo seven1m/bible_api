@@ -35,19 +35,19 @@ end
 # passing a topic as the value.
 # i.e. - /?random=hope
 def get_random_verse
-    json = File.read('random_verses.json')
-    obj = JSON.parse(json)
+  json = File.read('random_verses.json')
+  obj = JSON.parse(json)
 
-    topics = ["faith", "hope", "love"]
-    if params[:random] == "verse"
-        topic = topics.shuffle.first
-    elsif topics.include?(params[:random])
-        topic = params[:random]
-    else
-        return nil
-    end
+  topics = ["faith", "hope", "love"]
+  if params[:random] == "verse"
+    topic = topics.shuffle.first
+  elsif topics.include?(params[:random])
+    topic = params[:random]
+  else
+    return nil
+  end
 
-    obj[topic].shuffle.first
+  obj[topic].shuffle.first
 end
 
 # pulled from sinatra-jsonp and modified to return a UTF-8 charset
@@ -80,22 +80,22 @@ end
 
 get '/' do
   if params[:random]
-      ref_string = get_random_verse
-      if ref_string.nil?
-          status 404
-          response = { error: 'Unrecognized topic' }
-          return jsonp(response)
-      else
-          display_verse_from(ref_string)
-      end
+    ref_string = get_random_verse
+    if ref_string.nil?
+      status 404
+      response = { error: 'Unrecognized topic' }
+      return jsonp(response)
+    else
+      display_verse_from(ref_string)
+    end
   else
-      @translations = DB['select id, identifier, language, name from translations order by language, name']
-      books = DB["select translation_id, book from verses where book_id = 'JHN' group by translation_id"]
-      @books = books.each_with_object({}) do |book, hash|
-        hash[book[:translation_id]] = book[:book]
-      end
-      @host = (request.env['SCRIPT_URI'] || request.env['REQUEST_URI']).split('?').first
-      erb :index
+    @translations = DB['select id, identifier, language, name from translations order by language, name']
+    books = DB["select translation_id, book from verses where book_id = 'JHN' group by translation_id"]
+    @books = books.each_with_object({}) do |book, hash|
+      hash[book[:translation_id]] = book[:book]
+    end
+    @host = (request.env['SCRIPT_URI'] || request.env['REQUEST_URI']).split('?').first
+    erb :index
   end
 end
 
@@ -106,45 +106,45 @@ get '/:ref' do
 end
 
 def display_verse_from(ref_string)
-    translation = DB['select * from translations where identifier = ?', params[:translation] || 'WEB'].first
-    vn = params[:verse_numbers]
-    unless translation
-      status 404
-      response = { error: 'translation not found' }
-      return jsonp(response)
-    end
-    ref = BibleRef::Reference.new(ref_string, language: translation[:language_code])
-    if (ranges = ref.ranges)
-      if (verses = get_verses(ranges, translation[:id]))
-        verses.map! do |v|
-          {
-            book_id:   v[:book_id],
-            book_name: v[:book],
-            chapter:   v[:chapter],
-            verse:     v[:verse],
-            text:      v[:text]
-          }
-        end
-        verse_text = if vn == 'true'
-                       verses.map { |v| '(' + v[:verse].to_s + ') ' + v[:text] }.join
-                     else
-                       verses.map { |v| v[:text] }.join
-                     end
-        response = {
-          reference:        ref.normalize,
-          verses:           verses,
-          text:             verse_text,
-          translation_id:   translation[:identifier],
-          translation_name: translation[:name],
-          translation_note: translation[:license]
+  translation = DB['select * from translations where identifier = ?', params[:translation] || 'WEB'].first
+  vn = params[:verse_numbers]
+  unless translation
+    status 404
+    response = { error: 'translation not found' }
+    return jsonp(response)
+  end
+  ref = BibleRef::Reference.new(ref_string, language: translation[:language_code])
+  if (ranges = ref.ranges)
+    if (verses = get_verses(ranges, translation[:id]))
+      verses.map! do |v|
+        {
+          book_id:   v[:book_id],
+          book_name: v[:book],
+          chapter:   v[:chapter],
+          verse:     v[:verse],
+          text:      v[:text]
         }
-      else
-        status 404
-        response = { error: 'not found' }
       end
+      verse_text = if vn == 'true'
+                     verses.map { |v| '(' + v[:verse].to_s + ') ' + v[:text] }.join
+                   else
+                     verses.map { |v| v[:text] }.join
+                   end
+      response = {
+        reference:        ref.normalize,
+        verses:           verses,
+        text:             verse_text,
+        translation_id:   translation[:identifier],
+        translation_name: translation[:name],
+        translation_note: translation[:license]
+      }
     else
       status 404
       response = { error: 'not found' }
     end
-    jsonp response
+  else
+    status 404
+    response = { error: 'not found' }
+  end
+  jsonp response
 end
