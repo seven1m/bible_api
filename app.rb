@@ -30,6 +30,24 @@ def get_verses(ranges, translation_id)
   all
 end
 
+# Use /random to generate a random verse.
+# You can generate one from a specific topic by
+# adding :topic_name afterwards.
+# i.e. - /random:hope
+def get_random_verse
+    json = File.read('random_verses.json')
+    obj = JSON.parse(json)
+
+    topics = ["faith", "hope", "love"]
+    if params[:ref].match(":")
+        topic_array = topics.select {|t| params[:ref].match("random:#{t}")}
+        topic = topic_array.pop
+    else
+        topic = topics.shuffle.first
+    end
+    obj[topic].shuffle.first
+end
+
 # pulled from sinatra-jsonp and modified to return a UTF-8 charset
 module Sinatra
   module Jsonp
@@ -70,7 +88,7 @@ end
 
 get '/:ref' do
   content_type 'application/json', charset: 'utf-8'
-  ref_string = params[:ref].tr('+', ' ')
+  ref_string = params[:ref].downcase.match('random') ? get_random_verse : params[:ref].tr('+', ' ')
   translation = DB['select * from translations where identifier = ?', params[:translation] || 'WEB'].first
   vn = params[:verse_numbers]
   unless translation
