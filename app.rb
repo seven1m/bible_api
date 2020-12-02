@@ -30,24 +30,36 @@ def get_verses(ranges, translation_id)
   all
 end
 
-# Use /?random=verse to generate a random verse.
-# You can generate one from a specific topic by
-# passing a topic as the value.
-# i.e. - /?random=hope
-def get_random_verse
-  json = File.read('random_verses.json')
-  obj = JSON.parse(json)
-
-  topics = ["faith", "hope", "love"]
-  if params[:random] == "verse"
-    topic = topics.shuffle.first
-  elsif topics.include?(params[:random])
-    topic = params[:random]
-  else
-    return nil
+def get_translation
+  translation = DB['select * from translations where identifier = ?', params[:translation] || 'WEB'].first
+  unless translation
+    status 404
+    response = { error: 'translation not found' }
+    return response
   end
+  translation
+end
 
-  obj[topic].shuffle.first
+# Use /?random=verse to generate a random verse.
+def get_random_verse
+  if params[:random] != "verse"
+    nil
+  else
+    translation = get_translation
+    return jsonp(translation[:error]) if translation[:error]
+    translation_id = DB['select id from translations where identifier = ?;', translation[:identifier]].first[:id]
+
+    books_size = DB['select book_num from verses where translation_id = ? order by book_num desc limit 1;', translation_id].first[:book_num]
+    book_num = rand(books_size) + 1
+    book = DB['select book from verses where translation_id = ? && book_num = ?;', translation_id, book_num].first[:book]
+
+    chapters_size = DB['select chapter from verses where translation_id = ? && book_num = ? order by chapter desc limit 1;', translation_id, book_num].first[:chapter]
+    chapter = rand(chapters_size) + 1
+
+    verses_size = DB['select verse from verses where translation_id = ? && book_num = ? && chapter = ? order by verse desc limit 1;', translation_id, book_num, chapter].first[:verse]
+    verse = rand(verses_size) + 1
+    "#{book} #{chapter}:#{verse}"
+  end
 end
 
 # pulled from sinatra-jsonp and modified to return a UTF-8 charset
@@ -83,7 +95,7 @@ get '/' do
     ref_string = get_random_verse
     if ref_string.nil?
       status 404
-      response = { error: 'Unrecognized topic' }
+      response = { error: 'unrecognized value for parameter' }
       return jsonp(response)
     else
       display_verse_from(ref_string)
@@ -106,13 +118,9 @@ get '/:ref' do
 end
 
 def display_verse_from(ref_string)
-  translation = DB['select * from translations where identifier = ?', params[:translation] || 'WEB'].first
+  translation = get_translation
+  return jsonp(translation[:error]) if translation[:error]
   vn = params[:verse_numbers]
-  unless translation
-    status 404
-    response = { error: 'translation not found' }
-    return jsonp(response)
-  end
   ref = BibleRef::Reference.new(ref_string, language: translation[:language_code])
   if (ranges = ref.ranges)
     if (verses = get_verses(ranges, translation[:id]))
