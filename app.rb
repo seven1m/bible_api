@@ -47,16 +47,15 @@ def get_random_verse
   else
     translation = get_translation
     return jsonp(translation[:error]) if translation[:error]
-    translation_id = DB['select id from translations where identifier = ?;', translation[:identifier]].first[:id]
 
-    books_size = DB['select book_num from verses where translation_id = ? order by book_num desc limit 1;', translation_id].first[:book_num]
+    books_size = DB['select book_num from verses where translation_id = ? order by book_num desc limit 1;', translation[:id]].first[:book_num]
     book_num = rand(books_size) + 1
-    book = DB['select book from verses where translation_id = ? && book_num = ?;', translation_id, book_num].first[:book]
+    book = DB['select book from verses where translation_id = ? && book_num = ?;', translation[:id], book_num].first[:book]
 
-    chapters_size = DB['select chapter from verses where translation_id = ? && book_num = ? order by chapter desc limit 1;', translation_id, book_num].first[:chapter]
+    chapters_size = DB['select chapter from verses where translation_id = ? && book_num = ? order by chapter desc limit 1;', translation[:id], book_num].first[:chapter]
     chapter = rand(chapters_size) + 1
 
-    verses_size = DB['select verse from verses where translation_id = ? && book_num = ? && chapter = ? order by verse desc limit 1;', translation_id, book_num, chapter].first[:verse]
+    verses_size = DB['select verse from verses where translation_id = ? && book_num = ? && chapter = ? order by verse desc limit 1;', translation[:id], book_num, chapter].first[:verse]
     verse = rand(verses_size) + 1
     "#{book} #{chapter}:#{verse}"
   end
