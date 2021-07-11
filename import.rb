@@ -2,11 +2,13 @@ require 'bundler/setup'
 require 'sequel'
 require 'mysql2'
 require 'bible_parser'
+require 'bible_ref'
 
 DB = Sequel.connect(ENV['BIBLE_API_DB'])
 
 class Importer
   def import(path, translation_id)
+    puts path
     bible = BibleParser.new(File.open(path))
     bible.each_verse do |verse|
       data = verse.to_h
@@ -56,9 +58,24 @@ end
 translations.each do |translation|
   path = "bibles/#{translation['filename']}"
   lang_code_and_id = translation.delete('filename').split('.').first
-  translation['language_code'], translation['identifier'] = lang_code_and_id.split('-')
+  lang_parts = lang_code_and_id.split('-')
+  if lang_parts.size == 3
+    translation['language_code'] = lang_parts.first
+    translation['identifier'] = translation['abbrev'].downcase
+    raise 'bad abbrev' if translation['identifier'].to_s.strip == ''
+  elsif lang_parts.size == 2
+    translation['language_code'], translation['identifier'] = lang_parts
+  else
+    raise 'error with language and id'
+  end
   translation.delete('format')
+  translation.delete('abbrev')
   translation['name'] = translation.delete('version')
+  begin
+    BibleRef::Reference.new('John 3:16', language: translation['language_code'].split('-').first)
+  rescue KeyError
+    next # languaged not supported
+  end
   unless DB['select id from translations where identifier = ?', translation['identifier']].any?
     id = DB[:translations].insert(translation)
     importer.import(path, id)
