@@ -18,6 +18,7 @@ GEM
     rack (2.2.3)
     rack-protection (2.1.0)
       rack
+    rake (13.0.6)
     ruby2_keywords (0.0.4)
     sequel (5.46.0)
     sinatra (2.1.0)
@@ -40,6 +41,7 @@ DEPENDENCIES
   bible_parser
   bible_ref
   mysql2
+  rake
   sequel
   sinatra
   sinatra-contrib

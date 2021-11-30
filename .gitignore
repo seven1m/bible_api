@@ -2,4 +2,3 @@ log
 tmp
 config/newrelic.yml
 .bundle
-deploy
