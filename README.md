@@ -75,7 +75,7 @@ If you want to host this application yourself, you'll need a Linux server with R
 
    ```
    mysql -uroot -e "create database bible_api; grant all on bible_api.* to user@localhost identified by 'password';"
-   export BIBLE_API_DB="mysql2://user:password@localhost/bible_api"
+   export DATABASE_URL="mysql2://user:password@localhost/bible_api"
    bundle exec ruby import.rb
    ```
 

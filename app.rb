@@ -4,7 +4,7 @@ Bundler.require
 require 'sinatra/reloader'
 require 'json'
 
-DB = Sequel.connect(ENV['BIBLE_API_DB'], charset: 'utf8')
+DB = Sequel.connect(ENV['DATABASE_URL'].sub(%r{mysql://}, 'mysql2://'), charset: 'utf8')
 
 set :protection, except: [:json_csrf]
 
@@ -90,6 +90,9 @@ module Sinatra
 end
 
 get '/' do
+  unless DB.table_exists?(:verses)
+    return 'please run import.rb script according to README'
+  end
   if params[:random]
     ref_string = get_random_verse
     if ref_string.nil?
