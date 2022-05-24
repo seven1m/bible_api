@@ -10,8 +10,8 @@ set :root, root_dir
 set :app_file, File.join(root_dir, 'app.rb')
 disable :run
 
-FileUtils.mkdir_p 'log' unless File.exist?('log')
-log = File.new("#{root_dir}/log/sinatra.log", "a")
-$stderr.reopen(log)
+#FileUtils.mkdir_p 'log' unless File.exist?('log')
+#log = File.new("#{root_dir}/log/sinatra.log", "a")
+#$stderr.reopen(log)
 
 run Sinatra::Application
