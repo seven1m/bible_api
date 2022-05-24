@@ -108,7 +108,8 @@ get '/' do
     @books = books.each_with_object({}) do |book, hash|
       hash[book[:translation_id]] = book[:book]
     end
-    @host = (request.env['SCRIPT_URI'] || request.env['REQUEST_URI']).split('?').first
+    https = request.env['HTTP_X_FORWARDED_PROTO'] =~ /https/
+    @host = (https ? 'https://' : 'http://') + (request.env['SERVER_NAME'] || 'bible-api.com') + '/'
     erb :index
   end
 end
