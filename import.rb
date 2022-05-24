@@ -4,7 +4,7 @@ require 'mysql2'
 require 'bible_parser'
 require 'bible_ref'
 
-DB = Sequel.connect(ENV['BIBLE_API_DB'])
+DB = Sequel.connect(ENV['DATABASE_URL'].sub(%r{mysql://}, 'mysql2://'), charset: 'utf8')
 
 class Importer
   def import(path, translation_id)
