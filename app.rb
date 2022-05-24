@@ -104,7 +104,7 @@ get '/' do
     end
   else
     @translations = DB['select id, identifier, language, name from translations order by language, name']
-    books = DB["select translation_id, book from verses where book_id = 'JHN' group by translation_id"]
+    books = DB["select translation_id, book from verses where book_id = 'JHN' group by translation_id, book"]
     @books = books.each_with_object({}) do |book, hash|
       hash[book[:translation_id]] = book[:book]
     end
