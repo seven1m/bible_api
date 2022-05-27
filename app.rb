@@ -114,8 +114,16 @@ get '/' do
   end
 end
 
+options "/:ref" do
+  headers 'Access-Control-Allow-Origin' => '*',
+          'Access-Control-Allow-Methods' => ['OPTIONS', 'GET']
+  200
+end
+
 get '/:ref' do
   content_type 'application/json', charset: 'utf-8'
+  headers 'Access-Control-Allow-Origin' => '*',
+          'Access-Control-Allow-Methods' => ['OPTIONS', 'GET']
   ref_string = params[:ref].tr('+', ' ')
   display_verse_from(ref_string)
 end
