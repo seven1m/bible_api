@@ -17,7 +17,7 @@ GEM
       racc (~> 1.4)
     parslet (1.8.2)
     racc (1.6.1)
-    rack (2.2.4)
+    rack (2.2.6.2)
     rack-protection (2.2.3)
       rack
     rake (13.0.6)
