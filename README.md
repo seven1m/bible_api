@@ -53,7 +53,7 @@ This app is served from [bible-api.com](https://bible-api.com/), which anyone ca
 
 ## Hosting it Yourself
 
-If you want to host this application yourself, you'll need a Linux server with Ruby and MySQL (or MariaDB) installed. Follow the steps below:
+If you want to host this application yourself, you'll need a Linux server with Ruby, Redis, and MySQL (or MariaDB) installed. Follow the steps below:
 
 1. Clone the repo:
 
@@ -76,6 +76,7 @@ If you want to host this application yourself, you'll need a Linux server with R
    ```
    mysql -uroot -e "create database bible_api; grant all on bible_api.* to user@localhost identified by 'password';"
    export DATABASE_URL="mysql2://user:password@localhost/bible_api"
+   export REDIS_URL="redis://localhost:6379"
    bundle exec ruby import.rb
    ```
 

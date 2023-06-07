@@ -5,7 +5,9 @@ GEM
       nokogiri (>= 1.6.0)
     bible_ref (1.5.4)
       parslet (~> 1.6)
+    connection_pool (2.4.1)
     daemons (1.4.1)
+    dotenv (2.8.1)
     eventmachine (1.2.7)
     mini_portile2 (2.8.1)
     multi_json (1.15.0)
@@ -18,9 +20,15 @@ GEM
     parslet (1.8.2)
     racc (1.6.2)
     rack (2.2.6.4)
+    rack-attack (6.6.1)
+      rack (>= 1.0, < 3)
     rack-protection (3.0.5)
       rack
     rake (13.0.6)
+    redis (5.0.6)
+      redis-client (>= 0.9.0)
+    redis-client (0.14.1)
+      connection_pool
     ruby2_keywords (0.0.5)
     sequel (5.65.0)
     sinatra (3.0.5)
@@ -46,8 +54,11 @@ PLATFORMS
 DEPENDENCIES
   bible_parser
   bible_ref
+  dotenv
   mysql2
+  rack-attack
   rake
+  redis
   sequel
   sinatra
   sinatra-contrib

@@ -1,10 +1,24 @@
 require 'bundler'
 
 Bundler.require
-require 'sinatra/reloader'
 require 'json'
+require 'rack/attack'
+require 'redis'
+require 'sinatra/reloader'
 
-DB = Sequel.connect(ENV['DATABASE_URL'].sub(%r{mysql://}, 'mysql2://'), charset: 'utf8')
+require 'dotenv'
+Dotenv.load
+
+REDIS = Redis.new(url: ENV.fetch('REDIS_URL'))
+
+DB = Sequel.connect(ENV.fetch('DATABASE_URL').sub(%r{mysql://}, 'mysql2://'), charset: 'utf8')
+
+use Rack::Attack
+Rack::Attack.cache.store = Rack::Attack::StoreProxy::RedisStoreProxy.new(REDIS)
+
+Rack::Attack.throttle('requests by ip', limit: 15, period: 30) do |request|
+  request.ip
+end
 
 set :protection, except: [:json_csrf]
 
