@@ -108,14 +108,13 @@ get '/' do
     return 'please run import.rb script according to README'
   end
   if params[:random]
-    ref_string = get_random_verse
-    if ref_string.nil?
-      status 404
-      response = { error: 'unrecognized value for parameter' }
-      return jsonp(response)
-    else
-      display_verse_from(ref_string)
+    translation = get_translation
+    verse = nil
+    while verse.nil? || !BibleRef::Canons::Protestant.new.books.include?(verse[:book_id])
+      verse = DB["select * from verses where translation_id = :translation_id order by rand() limit 1", translation_id: translation[:id]].first
     end
+    ref = "#{verse[:book]} #{verse[:chapter]} #{verse[:verse]}"
+    jsonp render_response(verses: [verse], ref: ref, translation: translation)
   else
     @translations = DB['select id, identifier, language, name from translations order by language, name']
     books = DB["select translation_id, book from verses where book_id = 'JHN' group by translation_id, book"]
@@ -145,32 +144,10 @@ end
 def display_verse_from(ref_string)
   translation = get_translation
   return jsonp(translation[:error]) if translation[:error]
-  vn = params[:verse_numbers]
   ref = BibleRef::Reference.new(ref_string, language: translation[:language_code])
   if (ranges = ref.ranges)
     if (verses = get_verses(ranges, translation[:id]))
-      verses.map! do |v|
-        {
-          book_id:   v[:book_id],
-          book_name: v[:book],
-          chapter:   v[:chapter],
-          verse:     v[:verse],
-          text:      v[:text]
-        }
-      end
-      verse_text = if vn == 'true'
-                     verses.map { |v| '(' + v[:verse].to_s + ') ' + v[:text] }.join
-                   else
-                     verses.map { |v| v[:text] }.join
-                   end
-      response = {
-        reference:        ref.normalize,
-        verses:           verses,
-        text:             verse_text,
-        translation_id:   translation[:identifier],
-        translation_name: translation[:name],
-        translation_note: translation[:license]
-      }
+      response = render_response(verses: verses, ref: ref.normalize, translation: translation)
     else
       status 404
       response = { error: 'not found' }
@@ -180,4 +157,30 @@ def display_verse_from(ref_string)
     response = { error: 'not found' }
   end
   jsonp response
+end
+
+def render_response(verses:, ref:, translation:)
+  verses.map! do |v|
+    {
+      book_id:   v[:book_id],
+      book_name: v[:book],
+      chapter:   v[:chapter],
+      verse:     v[:verse],
+      text:      v[:text]
+    }
+  end
+  vn = params[:verse_numbers]
+  verse_text = if vn == 'true'
+                  verses.map { |v| '(' + v[:verse].to_s + ') ' + v[:text] }.join
+                else
+                  verses.map { |v| v[:text] }.join
+                end
+  {
+    reference:        ref,
+    verses:           verses,
+    text:             verse_text,
+    translation_id:   translation[:identifier],
+    translation_name: translation[:name],
+    translation_note: translation[:license]
+  }
 end
