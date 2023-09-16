@@ -113,7 +113,7 @@ get '/' do
     while verse.nil? || !BibleRef::Canons::Protestant.new.books.include?(verse[:book_id])
       verse = DB["select * from verses where translation_id = :translation_id order by rand() limit 1", translation_id: translation[:id]].first
     end
-    ref = "#{verse[:book]} #{verse[:chapter]} #{verse[:verse]}"
+    ref = "#{verse[:book]} #{verse[:chapter]}:#{verse[:verse]}"
     jsonp render_response(verses: [verse], ref: ref, translation: translation)
   else
     @translations = DB['select id, identifier, language, name from translations order by language, name']
