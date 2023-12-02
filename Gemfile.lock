@@ -7,18 +7,19 @@ GEM
       parslet (~> 1.6)
     bigdecimal (3.1.4)
     connection_pool (2.4.1)
-    daemons (1.4.1)
     dotenv (2.8.1)
-    eventmachine (1.2.7)
     mini_portile2 (2.8.5)
     multi_json (1.15.0)
     mustermann (3.0.0)
       ruby2_keywords (~> 0.0.1)
     mysql2 (0.5.5)
+    nio4r (2.7.0)
     nokogiri (1.15.5)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
     parslet (1.8.2)
+    puma (6.4.0)
+      nio4r (~> 2.0)
     racc (1.7.3)
     rack (2.2.8)
     rack-attack (6.7.0)
@@ -44,10 +45,6 @@ GEM
       rack-protection (= 3.1.0)
       sinatra (= 3.1.0)
       tilt (~> 2.0)
-    thin (1.8.2)
-      daemons (~> 1.0, >= 1.0.9)
-      eventmachine (~> 1.0, >= 1.0.4)
-      rack (>= 1, < 3)
     tilt (2.3.0)
 
 PLATFORMS
@@ -58,13 +55,16 @@ DEPENDENCIES
   bible_ref
   dotenv
   mysql2
+  puma
   rack-attack
   rake
   redis
   sequel
   sinatra
   sinatra-contrib
-  thin
+
+RUBY VERSION
+   ruby 3.2.2p53
 
 BUNDLED WITH
    2.1.4
