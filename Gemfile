@@ -1,5 +1,8 @@
 source 'https://rubygems.org'
 
+
+ruby '3.2.2'
+
 gem 'bible_parser'
 gem 'bible_ref'
 gem 'dotenv'

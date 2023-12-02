@@ -8,7 +8,7 @@ You can get the source code for this app and the open data for its database at
 
 <h2>Usage</h2>
 
-<pre><code><%= @host %>BOOK+CHAPTER:VERSE</code></pre>
+<pre><code><%= @host %>/BOOK+CHAPTER:VERSE</code></pre>
 
 <p>You can get pretty crazy with book names and with verse ranges using commas and hyphens.
 It mostly just works. (Though, if it doesn't, you can
@@ -18,28 +18,28 @@ It mostly just works. (Though, if it doesn't, you can
 
 <dl>
   <dt>single verse</dt>
-  <dd><a href="<%= @host %>john 3:16"><%= @host %>john 3:16</a></dd>
+  <dd><a href="<%= @host %>/john 3:16"><%= @host %>/john 3:16</a></dd>
 
   <dt>abbreviated book name</dt>
-  <dd><a href="<%= @host %>jn 3:16"><%= @host %>jn 3:16</a></dd>
+  <dd><a href="<%= @host %>/jn 3:16"><%= @host %>/jn 3:16</a></dd>
 
   <dt>verse range</dt>
-  <dd><a href="<%= @host %>romans+12:1-2"><%= @host %>romans+12:1-2</a></dd>
+  <dd><a href="<%= @host %>/romans+12:1-2"><%= @host %>/romans+12:1-2</a></dd>
 
   <dt>multiple ranges</dt>
-  <dd><a href="<%= @host %>romans 12:1-2,5-7,9,13:1-9&10"><%= @host %>romans 12:1-2,5-7,9,13:1-9&10</a></dd>
+  <dd><a href="<%= @host %>/romans 12:1-2,5-7,9,13:1-9&10"><%= @host %>/romans 12:1-2,5-7,9,13:1-9&10</a></dd>
 
   <dt>different translation</dt>
-  <dd><a href="<%= @host %>john 3:16?translation=kjv"><%= @host %>john 3:16?translation=kjv</a></dd>
+  <dd><a href="<%= @host %>/john 3:16?translation=kjv"><%= @host %>/john 3:16?translation=kjv</a></dd>
 
   <dt>verse numbers</dt>
-  <dd><a href="<%= @host %>john 3:16?verse_numbers=true"><%= @host %>john 3:16?verse_numbers=true</a></dd>
+  <dd><a href="<%= @host %>/john 3:16?verse_numbers=true"><%= @host %>/john 3:16?verse_numbers=true</a></dd>
 
   <dt>jsonp</dt>
-  <dd><a href="<%= @host %>john+3:16?callback=func"><%= @host %>john+3:16?callback=func</a></dd>
+  <dd><a href="<%= @host %>/john+3:16?callback=func"><%= @host %>/john+3:16?callback=func</a></dd>
 
   <dt>random verse</dt>
-  <dd><a href="<%= @host %>?random=verse"><%= @host %>?random=verse</a></dd>
+  <dd><a href="<%= @host %>/?random=verse"><%= @host %>/?random=verse</a></dd>
 </dl>
 
 <h2>Translations</h2>
