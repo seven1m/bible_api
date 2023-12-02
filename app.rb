@@ -105,6 +105,7 @@ end
 
 get '/' do
   unless DB.table_exists?(:verses)
+    status 500
     return 'please run import.rb script according to README'
   end
   if params[:random]
