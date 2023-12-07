@@ -11,7 +11,7 @@ Dotenv.load
 
 REDIS = Redis.new(url: ENV.fetch('REDIS_URL'))
 
-DB = Sequel.connect(ENV.fetch('DATABASE_URL').sub(%r{mysql://}, 'mysql2://'), charset: 'utf8')
+DB = Sequel.connect(ENV.fetch('DATABASE_URL').sub(%r{mysql://}, 'mysql2://'), charset: 'utf8', max_connections: 10)
 
 use Rack::Attack
 Rack::Attack.cache.store = Rack::Attack::StoreProxy::RedisStoreProxy.new(REDIS)
