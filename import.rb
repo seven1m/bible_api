@@ -8,7 +8,7 @@ DB = Sequel.connect(ENV['DATABASE_URL'].sub(%r{mysql://}, 'mysql2://'), charset:
 
 class Importer
   def import(path, translation_id)
-    puts path
+    puts '  importing...'
     bible = BibleParser.new(File.open(path))
     bible.each_verse do |verse|
       data = verse.to_h
@@ -16,10 +16,16 @@ class Importer
       data[:chapter] = data.delete(:chapter_num)
       data[:verse] = data.delete(:num)
       data[:translation_id] = translation_id
-      print "#{translation_id} - #{data[:book]} #{data[:chapter]}:#{data[:verse]}                    \r"
+      print "  #{translation_id} - #{data[:book]} #{data[:chapter]}:#{data[:verse]}                    \r"
       DB[:verses].insert(data)
     end
+    puts '  done                                             '
   end
+end
+
+if ARGV.include?('--drop-tables')
+  DB.drop_table :translations
+  DB.drop_table :verses
 end
 
 DB.create_table? :translations, charset: 'utf8' do
@@ -57,6 +63,7 @@ end
 
 translations.each do |translation|
   path = "bibles/#{translation['filename']}"
+  puts path
   lang_code_and_id = translation.delete('filename').split('.').first
   lang_parts = lang_code_and_id.split('-')
   if lang_parts.size == 3
@@ -66,15 +73,17 @@ translations.each do |translation|
   elsif lang_parts.size == 2
     translation['language_code'], translation['identifier'] = lang_parts
   else
-    raise 'error with language and id'
+    raise "error with language and id for lang parts: #{lang_parts.inspect}"
   end
   translation.delete('format')
   translation.delete('abbrev')
   translation['name'] = translation.delete('version')
+  language = translation['language_code'].split('-').first
   begin
-    BibleRef::Reference.new('John 3:16', language: translation['language_code'].split('-').first)
+    BibleRef::Reference.new('John 3:16', language: language)
   rescue KeyError
-    next # languaged not supported
+    puts "  language #{language} not supported"
+    next
   end
   unless DB['select id from translations where identifier = ?', translation['identifier']].any?
     id = DB[:translations].insert(translation)
