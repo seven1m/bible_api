@@ -3,7 +3,7 @@ GEM
   specs:
     bible_parser (1.1.1)
       nokogiri (>= 1.6.0)
-    bible_ref (1.5.4)
+    bible_ref (1.6.0)
       parslet (~> 1.6)
     bigdecimal (3.1.4)
     connection_pool (2.4.1)
