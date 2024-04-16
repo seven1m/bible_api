@@ -1,70 +1,17 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    bible_parser (1.1.2)
-      nokogiri (>= 1.6.0)
-    bible_ref (1.6.0)
-      parslet (~> 1.6)
-    bigdecimal (3.1.4)
-    connection_pool (2.4.1)
-    dotenv (2.8.1)
-    mini_portile2 (2.8.5)
-    multi_json (1.15.0)
-    mustermann (3.0.0)
-      ruby2_keywords (~> 0.0.1)
-    mysql2 (0.5.5)
-    nio4r (2.7.0)
-    nokogiri (1.16.2)
-      mini_portile2 (~> 2.8.2)
-      racc (~> 1.4)
-    parslet (1.8.2)
-    puma (6.4.2)
-      nio4r (~> 2.0)
-    racc (1.7.3)
-    rack (2.2.8.1)
-    rack-attack (6.7.0)
-      rack (>= 1.0, < 4)
-    rack-protection (3.1.0)
-      rack (~> 2.2, >= 2.2.4)
-    rake (13.1.0)
-    redis (5.0.8)
-      redis-client (>= 0.17.0)
-    redis-client (0.18.0)
-      connection_pool
-    ruby2_keywords (0.0.5)
-    sequel (5.74.0)
-      bigdecimal
-    sinatra (3.1.0)
-      mustermann (~> 3.0)
-      rack (~> 2.2, >= 2.2.4)
-      rack-protection (= 3.1.0)
-      tilt (~> 2.0)
-    sinatra-contrib (3.1.0)
-      multi_json
-      mustermann (~> 3.0)
-      rack-protection (= 3.1.0)
-      sinatra (= 3.1.0)
-      tilt (~> 2.0)
-    tilt (2.3.0)
+    passenger (6.0.20)
+      rack
+      rake (>= 0.8.1)
+    rack (3.0.10)
+    rake (13.2.1)
 
 PLATFORMS
-  ruby
+  x86_64-darwin-22
 
 DEPENDENCIES
-  bible_parser
-  bible_ref
-  dotenv
-  mysql2
-  puma
-  rack-attack
-  rake
-  redis
-  sequel
-  sinatra
-  sinatra-contrib
-
-RUBY VERSION
-   ruby 3.2.3p157
+  passenger
 
 BUNDLED WITH
-   2.1.4
+   2.5.9

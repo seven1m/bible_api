@@ -3,3 +3,5 @@ tmp
 config/newrelic.yml
 .bundle
 .env
+
+vendor/bundle
