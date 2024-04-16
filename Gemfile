@@ -14,5 +14,5 @@ gem 'sequel'
 gem 'sinatra'
 gem 'sinatra-contrib'
 
-gem 'sequel', '~> 5.79.0'
-gem 'sequel-mysql2', '~> 0.6.0'
+gem 'sequel-mysql2'
+
