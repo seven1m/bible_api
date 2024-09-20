@@ -86,10 +86,13 @@ get '/' do
     return 'please run import.rb script according to README'
   end
   if params[:random]
+    headers 'Access-Control-Allow-Origin' => '*',
+            'Access-Control-Allow-Methods' => ['OPTIONS', 'GET']
     translation = get_translation
     verse = nil
     attempts = 0
     while attempts < 10 && (verse.nil? || !BibleRef::Canons::Protestant.new.books.include?(verse[:book_id]))
+
       verse = DB["select * from verses where translation_id = :translation_id order by rand() limit 1", translation_id: translation[:id]].first
       attempts += 1
     end
