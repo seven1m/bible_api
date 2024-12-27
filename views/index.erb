@@ -51,11 +51,12 @@ It mostly just works. (Though, if it doesn't, you can
     <th>Identifier</th>
   </tr>
   <% @translations.each do |translation| %>
+    <% next unless (book_name = @books[translation[:id]]) %>
     <tr>
       <td><%= translation[:language] %></td>
       <td><%= translation[:name] %></td>
       <td>
-        <a href="/<%= @books[translation[:id]] %>+3:16?translation=<%= translation[:identifier] %>"><%= translation[:identifier] %></a>
+        <a href="/<%= book_name %>+3:16?translation=<%= translation[:identifier] %>"><%= translation[:identifier] %></a>
         <% if translation[:identifier] == 'web' %>(default)<% end %>
       </td>
     </tr>
