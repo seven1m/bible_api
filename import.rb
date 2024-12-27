@@ -4,7 +4,7 @@ require 'mysql2'
 require 'bible_parser'
 require 'bible_ref'
 
-DB = Sequel.connect(ENV['DATABASE_URL'].sub(%r{mysql://}, 'mysql2://'), charset: 'utf8')
+DB = Sequel.connect(ENV['DATABASE_URL'].sub(%r{mysql://}, 'mysql2://'), encoding: 'utf8mb4')
 
 class Importer
   def import(path, translation_id)
@@ -23,12 +23,12 @@ class Importer
   end
 end
 
-if ARGV.include?('--drop-tables')
+if ARGV.delete('--drop-tables')
   DB.drop_table :translations
   DB.drop_table :verses
 end
 
-DB.create_table? :translations, charset: 'utf8' do
+DB.create_table? :translations, charset: 'utf8mb4' do
   primary_key :id
   String :identifier
   String :name
@@ -37,7 +37,7 @@ DB.create_table? :translations, charset: 'utf8' do
   String :license
 end
 
-DB.create_table? :verses, charset: 'utf8' do
+DB.create_table? :verses, charset: 'utf8mb4' do
   primary_key :id
   Fixnum :book_num
   String :book_id
@@ -50,8 +50,10 @@ end
 
 importer = Importer.new
 
+BIBLES_PATH = ARGV.first || 'bibles'
+
 # grab bible file info from the README.md table (markdown format)
-table = File.read('bibles/README.md').scan(/^ *\|.+\| *$/)
+table = File.read("#{BIBLES_PATH}/README.md").scan(/^ *\|.+\| *$/)
 headings = table.shift.split(/\s*\|\s*/)
 table.shift # junk
 translations = table.map do |row|
@@ -62,7 +64,7 @@ translations = table.map do |row|
 end
 
 translations.each do |translation|
-  path = "bibles/#{translation['filename']}"
+  path = "#{BIBLES_PATH}/#{translation['filename']}"
   puts path
   lang_code_and_id = translation.delete('filename').split('.').first
   lang_parts = lang_code_and_id.split('-')
@@ -75,10 +77,11 @@ translations.each do |translation|
   else
     raise "error with language and id for lang parts: #{lang_parts.inspect}"
   end
+  translation['language_code'] = 'zh-tw' if translation['language_code'] == 'chi'
   translation.delete('format')
   translation.delete('abbrev')
   translation['name'] = translation.delete('version')
-  language = translation['language_code'].split('-').first
+  language = translation['language_code']
   begin
     BibleRef::Reference.new('John 3:16', language: language)
   rescue KeyError
