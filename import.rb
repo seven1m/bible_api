@@ -28,6 +28,10 @@ if ARGV.delete('--drop-tables')
   DB.drop_table :verses
 end
 
+if ARGV.delete('--overwrite')
+  @overwrite = true
+end
+
 DB.create_table? :translations, charset: 'utf8mb4' do
   primary_key :id
   String :identifier
@@ -50,7 +54,8 @@ end
 
 importer = Importer.new
 
-BIBLES_PATH = ARGV.first || 'bibles'
+BIBLES_PATH = ARGV[0] || 'bibles'
+TRANSLATION = ARGV[1] # for debugging
 
 # grab bible file info from the README.md table (markdown format)
 table = File.read("#{BIBLES_PATH}/README.md").scan(/^ *\|.+\| *$/)
@@ -65,6 +70,8 @@ end
 
 translations.each do |translation|
   path = "#{BIBLES_PATH}/#{translation['filename']}"
+  next if TRANSLATION && path.split('/').last != TRANSLATION
+
   puts path
   lang_code_and_id = translation.delete('filename').split('.').first
   lang_parts = lang_code_and_id.split('-')
@@ -88,8 +95,18 @@ translations.each do |translation|
     puts "  language #{language} not supported"
     next
   end
-  unless DB['select id from translations where identifier = ?', translation['identifier']].any?
-    id = DB[:translations].insert(translation)
-    importer.import(path, id)
+
+  existing_id = DB['select id from translations where identifier = ?', translation['identifier']].first&.fetch(:id, nil)
+  if existing_id
+    if @overwrite
+      DB[:verses].where(translation_id: existing_id).delete
+      DB[:translations].where(identifier: translation['identifier']).delete
+    else
+      puts '  skipping existing translation (pass --overwrite)'
+      next
+    end
   end
+
+  id = DB[:translations].insert(translation)
+  importer.import(path, id)
 end
