@@ -20,6 +20,12 @@ Rack::Attack.throttle('requests by ip', limit: 15, period: 30) do |request|
   request.ip
 end
 
+CORS_HEADERS = {
+  'Access-Control-Allow-Origin' => '*',
+  'Access-Control-Allow-Methods' => ['OPTIONS', 'GET'],
+  'Access-Control-Allow-Headers' => ['Content-Type']
+}.freeze
+
 set :protection, except: [:json_csrf]
 
 def get_verse_id(ref, translation_id, last = false)
@@ -86,8 +92,7 @@ get '/' do
     return 'please run import.rb script according to README'
   end
   if params[:random]
-    headers 'Access-Control-Allow-Origin' => '*',
-            'Access-Control-Allow-Methods' => ['OPTIONS', 'GET']
+    headers CORS_HEADERS
     translation = get_translation
     verse = nil
     attempts = 0
@@ -114,15 +119,13 @@ get '/' do
 end
 
 options "/:ref" do
-  headers 'Access-Control-Allow-Origin' => '*',
-          'Access-Control-Allow-Methods' => ['OPTIONS', 'GET']
+  headers CORS_HEADERS
   200
 end
 
 get '/:ref' do
   content_type 'application/json', charset: 'utf-8'
-  headers 'Access-Control-Allow-Origin' => '*',
-          'Access-Control-Allow-Methods' => ['OPTIONS', 'GET']
+  headers CORS_HEADERS
   ref_string = params[:ref].tr('+', ' ')
   display_verse_from(ref_string)
 end
