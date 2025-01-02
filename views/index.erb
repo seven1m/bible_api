@@ -66,6 +66,28 @@ It mostly just works. (Though, if it doesn't, you can
 <p>Help us add more bible translations! Contribute to our
 <a href="https://github.com/seven1m/open-bibles">repository of open and freely-licensed bibles</a>.</p>
 
+<h2>Single-Chapter Books</h2>
+
+<p>There are some books of the bible that only contain a single chapter,
+i.e. Obadiah, Philemon, 2 John, 3 John, and Jude. That means it can be ambigious to request
+<code>Jude 1</code>. Do you mean the first chapter of Jude, or do you mean the first verse?
+This API assumes you want the <strong>first verse</strong>. This seems to be consistent with
+what most people expect, though it can be inconsistent when compared to other requests:</p>
+
+<ul>
+  <li><a href="<%= @host %>/john+1">john 1</a> (first chapter)</li>
+  <li><a href="<%= @host %>/jude+1">jude 1</a> (first verse of only chapter)</li>
+</ul>
+
+<p><strong>This is working by design.</strong> If you want the whole chapter/book of Jude
+(and all single-chapter books), you can change this behavior by either setting a header
+or passing an extra URL paramter:
+
+<ol>
+  <li>request header: <code>X-Single-Chapter-Book-Matching: indifferent</code></li>
+  <li>URL parameter: <code>single_chapter_book_matching=indifferent</code> (<a href="<%= @host %>/jude 1?single_chapter_book_matching=indifferent">example</a>)</li>
+</ol>
+
 <h2>Terms of Use</h2>
 
 <p>This service is free for anyone to use as long as you don't abuse my server.

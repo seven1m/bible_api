@@ -132,7 +132,7 @@ end
 
 def display_verse_from(ref_string)
   translation = get_translation
-  ref = BibleRef::Reference.new(ref_string, language: translation[:language_code])
+  ref = BibleRef::Reference.new(ref_string, language: translation[:language_code], single_chapter_book_matching:)
   if (ranges = ref.ranges)
     if (verses = get_verses(ranges, translation[:id]))
       response = render_response(verses: verses, ref: ref.normalize, translation: translation)
@@ -145,6 +145,17 @@ def display_verse_from(ref_string)
     response = { error: 'not found' }
   end
   jsonp response
+end
+
+def single_chapter_book_matching
+  case request.params['single_chapter_book_matching'] || request.env['HTTP_X_SINGLE_CHAPTER_BOOK_MATCHING']
+  when 'indifferent'
+    # `jude 1` => whole chapter
+    :indifferent
+  else
+    # `jude 1` => single verse
+    :special
+  end
 end
 
 def render_response(verses:, ref:, translation:)
