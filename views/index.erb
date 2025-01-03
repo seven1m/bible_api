@@ -69,7 +69,7 @@ It mostly just works. (Though, if it doesn't, you can
 <h2>Single-Chapter Books</h2>
 
 <p>There are some books of the bible that only contain a single chapter,
-i.e. Obadiah, Philemon, 2 John, 3 John, and Jude. That means it can be ambigious to request
+i.e. Obadiah, Philemon, 2 John, 3 John, and Jude. That means it can be ambiguous to request
 <code>Jude 1</code>. Do you mean the first chapter of Jude, or do you mean the first verse?
 This API assumes you want the <strong>first verse</strong>. This seems to be consistent with
 what most people expect, though it can be inconsistent when compared to other requests:</p>
@@ -81,7 +81,7 @@ what most people expect, though it can be inconsistent when compared to other re
 
 <p><strong>This is working by design.</strong> If you want the whole chapter/book of Jude
 (and all single-chapter books), you can change this behavior by either setting a header
-or passing an extra URL paramter:
+or passing an extra URL parameter:
 
 <ol>
   <li>request header: <code>X-Single-Chapter-Book-Matching: indifferent</code></li>
