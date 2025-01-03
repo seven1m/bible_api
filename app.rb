@@ -2,6 +2,7 @@ require 'bundler'
 
 Bundler.require
 require 'json'
+require 'logger'
 require 'rack/attack'
 require 'redis'
 require 'sinatra/reloader'
@@ -12,11 +13,16 @@ Dotenv.load
 REDIS = Redis.new(url: ENV.fetch('REDIS_URL'))
 
 DB = Sequel.connect(ENV.fetch('DATABASE_URL').sub(%r{mysql://}, 'mysql2://'), encoding: 'utf8mb4', max_connections: 10)
+DB.sql_log_level = :debug
+DB.loggers << Logger.new($stdout)
 
 use Rack::Attack
 Rack::Attack.cache.store = Rack::Attack::StoreProxy::RedisStoreProxy.new(REDIS)
 
-Rack::Attack.throttle('requests by ip', limit: 15, period: 30) do |request|
+RACK_ATTACK_LIMIT = 15
+RACK_ATTACK_PERIOD = 30
+
+Rack::Attack.throttle('requests by ip', limit: RACK_ATTACK_LIMIT, period: RACK_ATTACK_PERIOD) do |request|
   request.ip
 end
 
@@ -50,12 +56,36 @@ def get_verses(ranges, translation_id)
   all
 end
 
-def get_translation
-  translation = DB['select * from translations where identifier = ?', params[:translation] || 'WEB'].first
+def get_translation(identifier = params[:translation])
+  translation = DB['select * from translations where identifier = ?', identifier || 'WEB'].first
   unless translation
     halt 404, jsonp(error: 'translation not found')
   end
   translation
+end
+
+def translation_as_json(translation)
+  translation.slice(:identifier, :name, :language, :language_code, :license)
+end
+
+def protestant_books
+  @protestant_books ||= BibleRef::Canons::Protestant.new.books
+end
+
+def ot_books
+  @ot_books ||= protestant_books[...protestant_books.index('MAT')]
+end
+
+def nt_books
+  @nt_books ||= protestant_books[protestant_books.index('MAT')..]
+end
+
+def random_verse(translation:, books: protestant_books)
+  verse = DB["select * from verses where translation_id = :translation_id and book_id in :books order by rand() limit 1", { translation_id: translation[:id], books: }].first
+  if verse.nil?
+    halt 404, jsonp(error: 'error getting verse')
+  end
+  verse
 end
 
 # pulled from sinatra-jsonp and modified to return a UTF-8 charset
@@ -91,21 +121,14 @@ get '/' do
     status 500
     return 'please run import.rb script according to README'
   end
+
   if params[:random]
+    # Legacy API we need to keep supporting. Use /data/:translation/random instead.
     headers CORS_HEADERS
     translation = get_translation
-    verse = nil
-    attempts = 0
-    while attempts < 10 && (verse.nil? || !BibleRef::Canons::Protestant.new.books.include?(verse[:book_id]))
-
-      verse = DB["select * from verses where translation_id = :translation_id order by rand() limit 1", translation_id: translation[:id]].first
-      attempts += 1
-    end
-    if verse.nil? || !BibleRef::Canons::Protestant.new.books.include?(verse[:book_id])
-      halt 404, jsonp(error: 'error getting verse')
-    end
+    verse = random_verse(translation:)
     ref = "#{verse[:book]} #{verse[:chapter]}:#{verse[:verse]}"
-    jsonp render_response(verses: [verse], ref: ref, translation: translation)
+    jsonp(render_response(verses: [verse], ref: ref, translation:))
   else
     @translations = DB['select id, identifier, language, name from translations order by language, name']
     books = DB["select translation_id, book from verses where book_id = 'JHN' group by translation_id, book"]
@@ -116,6 +139,130 @@ get '/' do
     @host = request.base_url
     erb :index
   end
+end
+
+get '/data' do
+  content_type 'application/json', charset: 'utf-8'
+  headers CORS_HEADERS
+
+  host = request.base_url
+  translations = DB['select * from translations order by language, name'].map do |t|
+    translation_as_json(t).merge(
+      url: "#{host}/data/#{t.fetch(:identifier)}"
+    )
+  end
+  { translations: }.to_json
+end
+
+get '/data/:translation' do
+  content_type 'application/json', charset: 'utf-8'
+  headers CORS_HEADERS
+
+  host = request.base_url
+  translation = get_translation
+  books = BibleRef::LANGUAGES[translation[:language_code]].new.books.filter_map do |id, config|
+    next unless protestant_books.include?(id)
+    {
+      id:,
+      name: config[:name],
+      url: "#{host}/data/#{translation.fetch(:identifier)}/#{id}",
+    }
+  end
+
+  {
+    translation: translation_as_json(translation),
+    books:,
+  }.to_json
+end
+
+get '/data/:translation/random' do
+  content_type 'application/json', charset: 'utf-8'
+  headers CORS_HEADERS
+
+  translation = get_translation
+  verse = random_verse(translation:).slice(:book_id, :book, :chapter, :verse, :text)
+
+  {
+    translation: translation_as_json(translation),
+    random_verse: verse,
+  }.to_json
+end
+
+get '/data/:translation/random/:book_id' do
+  content_type 'application/json', charset: 'utf-8'
+  headers CORS_HEADERS
+
+  translation = get_translation
+
+  case (book_id = params[:book_id].upcase)
+  when 'OT'
+    books = ot_books
+  when 'NT'
+    books = nt_books
+  else
+    books = book_id.split(',')
+    book = DB[
+      'select distinct book_id from verses where book_id in :books and translation_id = :translation_id',
+      books:,
+      translation_id: translation[:id]
+    ].first
+    unless book
+      halt 404, jsonp(error: 'book not found')
+    end
+  end
+
+  verse = random_verse(translation:, books:).slice(:book_id, :book, :chapter, :verse, :text)
+
+  {
+    translation: translation_as_json(translation),
+    random_verse: verse,
+  }.to_json
+end
+
+get '/data/:translation/:book_id' do
+  content_type 'application/json', charset: 'utf-8'
+  headers CORS_HEADERS
+
+  host = request.base_url
+  translation = get_translation
+  chapters = DB[
+    'select distinct book_id, book, chapter from verses where book_id = :book_id and translation_id = :translation_id order by chapter',
+    book_id: params[:book_id],
+    translation_id: translation[:id]
+  ].map do |record|
+    record.merge(url: "#{host}/data/#{translation.fetch(:identifier)}/#{record.fetch(:book_id)}/#{record.fetch(:chapter)}")
+  end
+
+  unless chapters.any?
+    halt 404, jsonp(error: 'book not found')
+  end
+
+  {
+    translation: translation_as_json(translation),
+    chapters:,
+  }.to_json
+end
+
+get '/data/:translation/:book_id/:chapter' do
+  content_type 'application/json', charset: 'utf-8'
+  headers CORS_HEADERS
+
+  translation = get_translation
+  verses = DB[
+    'select book_id, book, chapter, verse, text from verses where book_id = :book_id and chapter = :chapter and translation_id = :translation_id order by chapter, verse',
+    book_id: params[:book_id],
+    chapter: params[:chapter],
+    translation_id: translation[:id]
+  ].to_a
+
+  unless verses.any?
+    halt 404, jsonp(error: 'book/chapter not found')
+  end
+
+  {
+    translation: translation_as_json(translation),
+    verses:,
+  }.to_json
 end
 
 options "/:ref" do
