@@ -1,8 +1,46 @@
-require 'bundler/setup'
-require 'sequel'
-require 'mysql2'
 require 'bible_parser'
 require 'bible_ref'
+require 'bundler/setup'
+require 'dotenv'
+require 'mysql2'
+require 'optparse'
+require 'sequel'
+
+Dotenv.load
+
+@options = {
+  bibles_path: './bibles'
+}
+
+OptionParser.new do |opts|
+  opts.banner = 'Usage: ruby import.rb [options]'
+
+  opts.on('-t', '--translation=NAME', 'Only import a single translation (e.g. eng-ylt.osis.xml)') do |name|
+    @options[:translation] = name
+  end
+
+  opts.on('--bibles-path=PATH', 'Specify custom path for open-bibles (default: #{@options[:bibles_path].inspect})') do |path|
+    @options[:bibles_path] = path
+  end
+
+  opts.on('--overwrite', 'Overwrite any existing data') do
+    @options[:overwrite] = true
+  end
+
+  opts.on('--drop-tables', 'Drop all tables first (and recreate them)') do
+    @options[:drop_tables] = true
+  end
+
+  opts.on('-h', '--help') do
+    puts opts
+    exit
+  end
+end.parse!
+
+unless ENV['DATABASE_URL']
+  puts 'Must set the DATABASE_URL environment variable (probably in .env)'
+  exit 1
+end
 
 DB = Sequel.connect(ENV['DATABASE_URL'].sub(%r{mysql://}, 'mysql2://'), encoding: 'utf8mb4')
 
@@ -23,13 +61,9 @@ class Importer
   end
 end
 
-if ARGV.delete('--drop-tables')
+if @options[:drop_tables]
   DB.drop_table :translations
   DB.drop_table :verses
-end
-
-if ARGV.delete('--overwrite')
-  @overwrite = true
 end
 
 DB.create_table? :translations, charset: 'utf8mb4' do
@@ -54,11 +88,8 @@ end
 
 importer = Importer.new
 
-BIBLES_PATH = ARGV[0] || 'bibles'
-TRANSLATION = ARGV[1] # for debugging
-
 # grab bible file info from the README.md table (markdown format)
-table = File.read("#{BIBLES_PATH}/README.md").scan(/^ *\|.+\| *$/)
+table = File.read("#{@options[:bibles_path]}/README.md").scan(/^ *\|.+\| *$/)
 headings = table.shift.split(/\s*\|\s*/)
 table.shift # junk
 translations = table.map do |row|
@@ -69,8 +100,8 @@ translations = table.map do |row|
 end
 
 translations.each do |translation|
-  path = "#{BIBLES_PATH}/#{translation['filename']}"
-  next if TRANSLATION && path.split('/').last != TRANSLATION
+  path = "#{@options[:bibles_path]}/#{translation['filename']}"
+  next if @options[:translation] && path.split('/').last != @options[:translation]
 
   puts path
   lang_code_and_id = translation.delete('filename').split('.').first
@@ -98,7 +129,7 @@ translations.each do |translation|
 
   existing_id = DB['select id from translations where identifier = ?', translation['identifier']].first&.fetch(:id, nil)
   if existing_id
-    if @overwrite
+    if @options[:overwrite]
       DB[:verses].where(translation_id: existing_id).delete
       DB[:translations].where(identifier: translation['identifier']).delete
     else
