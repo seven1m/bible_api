@@ -219,6 +219,54 @@ get '/data/:translation/random/:book_id' do
   }.to_json
 end
 
+get '/data/book/:translation/:book_id' do
+  content_type 'application/json', charset: 'utf-8'
+  headers CORS_HEADERS
+
+  host = request.base_url
+  translation = get_translation
+
+  verses = DB[
+    'SELECT chapter, verse, text FROM verses WHERE book_id = :book_id AND translation_id = :translation_id ORDER BY chapter, verse',
+    book_id: params[:book_id],
+    translation_id: translation[:id]
+  ].all
+
+  if verses.empty?
+    halt 404, jsonp(error: 'book not found')
+  end
+
+  grouped = {}
+  verses.each do |row|
+    chapter = row[:chapter]
+    verse = row[:verse]
+    text = row[:text]
+
+    grouped[chapter] ||= {}
+    grouped[chapter][verse] = text
+  end
+
+  book_name = DB[
+    'SELECT DISTINCT book FROM verses WHERE book_id = :book_id AND translation_id = :translation_id LIMIT 1',
+    book_id: params[:book_id],
+    translation_id: translation[:id]
+  ].get(:book)
+
+  chapter_count = grouped.keys.count
+  verse_count = verses.count
+
+  response = {
+    translation: translation_as_json(translation),
+    book_id: params[:book_id],
+    book_name: book_name,
+    chapter_count: chapter_count,
+    verse_count: verse_count,
+    params[:book_id] => grouped
+  }
+
+  response.to_json
+end
+
 get '/data/:translation/:book_id' do
   content_type 'application/json', charset: 'utf-8'
   headers CORS_HEADERS
