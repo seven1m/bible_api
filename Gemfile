@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-ruby '3.3.6'
+ruby '3.3.7'
 
 gem 'bible_parser'
 gem 'bible_ref'

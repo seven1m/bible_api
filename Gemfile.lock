@@ -4,7 +4,7 @@ GEM
     base64 (0.2.0)
     bible_parser (1.1.2)
       nokogiri (>= 1.6.0)
-    bible_ref (1.9.0)
+    bible_ref (1.9.1)
       parslet (~> 1.6)
     bigdecimal (3.1.9)
     connection_pool (2.4.1)
@@ -79,7 +79,7 @@ DEPENDENCIES
   sinatra-contrib
 
 RUBY VERSION
-   ruby 3.3.6p108
+   ruby 3.3.7p123
 
 BUNDLED WITH
    2.6.2
