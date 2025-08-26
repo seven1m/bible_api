@@ -4,7 +4,7 @@ GEM
     base64 (0.3.0)
     bible_parser (1.1.2)
       nokogiri (>= 1.6.0)
-    bible_ref (1.9.1)
+    bible_ref (2.0.0)
       parslet (~> 1.6)
     bigdecimal (3.2.2)
     connection_pool (2.5.3)
