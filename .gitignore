@@ -3,3 +3,4 @@ tmp
 config/newrelic.yml
 .bundle
 .env
+/bible_ref

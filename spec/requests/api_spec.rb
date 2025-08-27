@@ -110,6 +110,49 @@ RSpec.describe 'Bible API', type: :request do
       end
     end
 
+    context 'with Spanish translations' do
+      it 'returns verse from Spanish translation using Spanish book name' do
+        get '/Juan+3:16?translation=bes'
+        expect(last_response).to be_ok
+
+        response = json_response
+        expect(response['translation_id']).to eq('bes')
+        expect(response['translation_name']).to eq('La Biblia en Español Sencillo')
+        expect(response['verses'][0]['book_name']).to eq('Juan')
+        expect(response['verses'][0]['chapter']).to eq(3)
+        expect(response['verses'][0]['verse']).to eq(16)
+      end
+
+      it 'works with different Spanish translations' do
+        get '/G%C3%A9nesis+1:1?translation=rv1909' # URL-encoded Génesis
+        expect(last_response).to be_ok
+
+        response = json_response
+        expect(response['translation_id']).to eq('rv1909')
+        expect(response['translation_name']).to eq('Reina Valera 1909')
+        expect(response['verses'][0]['book_name']).to eq('Génesis')
+      end
+
+      it 'handles Spanish book names with accents' do
+        get '/%C3%89xodo+20:1?translation=bes' # URL-encoded Éxodo
+        expect(last_response).to be_ok
+
+        response = json_response
+        expect(response['verses'][0]['book_name']).to eq('Éxodo')
+        expect(response['verses'][0]['chapter']).to eq(20)
+      end
+
+      it 'works with Spanish abbreviations' do
+        get '/Mat+5:3?translation=bes'
+        expect(last_response).to be_ok
+
+        response = json_response
+        expect(response['verses'][0]['book_name']).to eq('Mateo')
+        expect(response['verses'][0]['chapter']).to eq(5)
+        expect(response['verses'][0]['verse']).to eq(3)
+      end
+    end
+
     context 'with single chapter books' do
       it 'handles Jude correctly (single verse)' do
         get '/Jude+1'

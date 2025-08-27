@@ -109,6 +109,22 @@ RSpec.describe 'Data API Endpoints', type: :request do
           name: 'Russian Synodal Translation',
           language: 'Russian',
         },
+        'bes' => {
+          name: 'La Biblia en Español Sencillo',
+          language: 'Spanish',
+        },
+        'pddpt' => {
+          name: 'Palabra de Dios para ti / God\'s Word for You',
+          language: 'Spanish',
+        },
+        'rv1909' => {
+          name: 'Reina Valera 1909',
+          language: 'Spanish',
+        },
+        'vbl' => {
+          name: 'Versión Biblia Libre / Spanish Free Bible Version',
+          language: 'Spanish',
+        },
       }
 
       expect(response['translations'].length).to eq(expected_translations.length)
@@ -272,7 +288,28 @@ RSpec.describe 'Data API Endpoints', type: :request do
     end
 
     # Test full Bible translations (66 books)
-    %w[web kjv asv bbe darby dra webbe oeb-cw oeb-us clementine almeida rccv synodal bkr ylt cuv].each do |translation|
+    %w[
+      web
+      kjv
+      asv
+      bbe
+      darby
+      dra
+      webbe
+      oeb-cw
+      oeb-us
+      clementine
+      almeida
+      rccv
+      synodal
+      bkr
+      ylt
+      cuv
+      bes
+      pddpt
+      rv1909
+      vbl
+    ].each do |translation|
       it "returns exactly 66 Protestant books for #{translation} translation" do
         get "/data/#{translation}"
         expect(last_response).to be_ok
@@ -336,6 +373,8 @@ RSpec.describe 'Data API Endpoints', type: :request do
       'rccv' => /[ăâîșț]/, # Romanian characters
       'synodal' => /[а-я]/, # Cyrillic characters
       'cuv' => /[\u4e00-\u9fff]/, # Chinese characters
+      'bes' => /[áéíóúñü]/, # Spanish characters
+      'rv1909' => /[áéíóúñü]/, # Spanish characters
     }.each do |translation, pattern|
       it "returns localized book names for #{translation} translation" do
         get "/data/#{translation}"

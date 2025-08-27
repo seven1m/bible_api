@@ -1,11 +1,16 @@
+GIT
+  remote: https://github.com/seven1m/bible_ref.git
+  revision: de4065036cfb4d3df3b69e592c8d654239d325da
+  specs:
+    bible_ref (2.0.0)
+      parslet (~> 1.6)
+
 GEM
   remote: https://rubygems.org/
   specs:
     base64 (0.3.0)
     bible_parser (1.1.2)
       nokogiri (>= 1.6.0)
-    bible_ref (2.0.0)
-      parslet (~> 1.6)
     bigdecimal (3.2.2)
     connection_pool (2.5.3)
     diff-lcs (1.6.2)
@@ -85,7 +90,7 @@ PLATFORMS
 
 DEPENDENCIES
   bible_parser
-  bible_ref
+  bible_ref!
   dotenv
   mysql2
   puma
