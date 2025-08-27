@@ -101,7 +101,7 @@ DEPENDENCIES
   syntax_tree
 
 RUBY VERSION
-   ruby 3.3.7p123
+   ruby 3.3.9p170
 
 BUNDLED WITH
    2.6.2
