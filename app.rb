@@ -22,26 +22,25 @@ Rack::Attack.cache.store = Rack::Attack::StoreProxy::RedisStoreProxy.new(REDIS)
 RACK_ATTACK_LIMIT = 15
 RACK_ATTACK_PERIOD = 30
 
-Rack::Attack.throttle('requests by ip', limit: RACK_ATTACK_LIMIT, period: RACK_ATTACK_PERIOD) do |request|
-  request.ip
-end
+Rack::Attack.throttle('requests by ip', limit: RACK_ATTACK_LIMIT, period: RACK_ATTACK_PERIOD) { |request| request.ip }
 
 CORS_HEADERS = {
   'Access-Control-Allow-Origin' => '*',
-  'Access-Control-Allow-Methods' => ['OPTIONS', 'GET'],
-  'Access-Control-Allow-Headers' => ['Content-Type']
+  'Access-Control-Allow-Methods' => %w[OPTIONS GET],
+  'Access-Control-Allow-Headers' => ['Content-Type'],
 }.freeze
 
 set :protection, except: [:json_csrf]
 
 def get_verse_id(ref, translation_id, last = false)
-  record = DB[
-    'select id from verses ' \
-    "where book_id = :book and chapter = :chapter #{ref[:verse] ? 'and verse = :verse' : ''} " \
-    'and translation_id = :translation_id ' \
-    " #{last ? 'order by id desc' : ''} limit 1",
-    ref.update(translation_id: translation_id)
-  ].first
+  record =
+    DB[
+      'select id from verses ' \
+        "where book_id = :book and chapter = :chapter #{ref[:verse] ? 'and verse = :verse' : ''} " \
+        'and translation_id = :translation_id ' \
+        " #{last ? 'order by id desc' : ''} limit 1",
+      ref.update(translation_id: translation_id)
+    ].first
   record ? record[:id] : nil
 end
 
@@ -49,7 +48,7 @@ def get_verses(ranges, translation_id)
   all = []
   ranges.each do |(ref_from, ref_to)|
     start_id = get_verse_id(ref_from, translation_id)
-    stop_id  = get_verse_id(ref_to, translation_id, :last)
+    stop_id = get_verse_id(ref_to, translation_id, :last)
     return nil unless start_id && stop_id
     all += DB['select * from verses where id between ? and ?', start_id, stop_id].to_a
   end
@@ -58,9 +57,7 @@ end
 
 def get_translation(identifier = params[:translation])
   translation = DB['select * from translations where identifier = ?', identifier || 'WEB'].first
-  unless translation
-    halt 404, jsonp(error: 'translation not found')
-  end
+  halt 404, jsonp(error: 'translation not found') unless translation
   translation
 end
 
@@ -81,10 +78,12 @@ def nt_books
 end
 
 def random_verse(translation:, books: protestant_books)
-  verse = DB["select * from verses where translation_id = :translation_id and book_id in :books order by rand() limit 1", { translation_id: translation[:id], books: }].first
-  if verse.nil?
-    halt 404, jsonp(error: 'error getting verse')
-  end
+  verse =
+    DB[
+      'select * from verses where translation_id = :translation_id and book_id in :books order by rand() limit 1',
+      { translation_id: translation[:id], books: }
+    ].first
+  halt 404, jsonp(error: 'error getting verse') if verse.nil?
   verse
 end
 
@@ -93,13 +92,11 @@ module Sinatra
   module Jsonp
     def jsonp(*args)
       if args.size > 0
-        data = MultiJson.dump args[0], :pretty => settings.respond_to?(:json_pretty) && settings.json_pretty
+        data = MultiJson.dump args[0], pretty: settings.respond_to?(:json_pretty) && settings.json_pretty
         if args.size > 1
           callback = args[1].to_s
         else
-          ['callback','jscallback','jsonp','jsoncallback'].each do |x|
-            callback = params.delete(x) unless callback
-          end
+          %w[callback jscallback jsonp jsoncallback].each { |x| callback = params.delete(x) unless callback }
         end
         if callback
           callback.tr!('^a-zA-Z0-9_$\.', '')
@@ -132,9 +129,7 @@ get '/' do
   else
     @translations = DB['select id, identifier, language, name from translations order by language, name']
     books = DB["select translation_id, book from verses where book_id = 'JHN' group by translation_id, book"]
-    @books = books.each_with_object({}) do |book, hash|
-      hash[book[:translation_id]] = book[:book]
-    end
+    @books = books.each_with_object({}) { |book, hash| hash[book[:translation_id]] = book[:book] }
     https = request.env['HTTP_X_FORWARDED_PROTO'] =~ /https/
     @host = request.base_url
     erb :index
@@ -146,11 +141,10 @@ get '/data' do
   headers CORS_HEADERS
 
   host = request.base_url
-  translations = DB['select * from translations order by language, name'].map do |t|
-    translation_as_json(t).merge(
-      url: "#{host}/data/#{t.fetch(:identifier)}"
-    )
-  end
+  translations =
+    DB['select * from translations order by language, name'].map do |t|
+      translation_as_json(t).merge(url: "#{host}/data/#{t.fetch(:identifier)}")
+    end
   { translations: }.to_json
 end
 
@@ -160,19 +154,13 @@ get '/data/:translation' do
 
   host = request.base_url
   translation = get_translation
-  books = BibleRef::LANGUAGES[translation[:language_code]].new.books.filter_map do |id, config|
-    next unless protestant_books.include?(id)
-    {
-      id:,
-      name: config[:name],
-      url: "#{host}/data/#{translation.fetch(:identifier)}/#{id}",
-    }
-  end
+  books =
+    BibleRef::LANGUAGES[translation[:language_code]].new.books.filter_map do |id, config|
+      next unless protestant_books.include?(id)
+      { id:, name: config[:name], url: "#{host}/data/#{translation.fetch(:identifier)}/#{id}" }
+    end
 
-  {
-    translation: translation_as_json(translation),
-    books:,
-  }.to_json
+  { translation: translation_as_json(translation), books: }.to_json
 end
 
 get '/data/:translation/random' do
@@ -182,10 +170,7 @@ get '/data/:translation/random' do
   translation = get_translation
   verse = random_verse(translation:).slice(:book_id, :book, :chapter, :verse, :text)
 
-  {
-    translation: translation_as_json(translation),
-    random_verse: verse,
-  }.to_json
+  { translation: translation_as_json(translation), random_verse: verse }.to_json
 end
 
 get '/data/:translation/random/:book_id' do
@@ -201,22 +186,18 @@ get '/data/:translation/random/:book_id' do
     books = nt_books
   else
     books = book_id.split(',')
-    book = DB[
-      'select distinct book_id from verses where book_id in :books and translation_id = :translation_id',
-      books:,
-      translation_id: translation[:id]
-    ].first
-    unless book
-      halt 404, jsonp(error: 'book not found')
-    end
+    book =
+      DB[
+        'select distinct book_id from verses where book_id in :books and translation_id = :translation_id',
+        books:,
+        translation_id: translation[:id]
+      ].first
+    halt 404, jsonp(error: 'book not found') unless book
   end
 
   verse = random_verse(translation:, books:).slice(:book_id, :book, :chapter, :verse, :text)
 
-  {
-    translation: translation_as_json(translation),
-    random_verse: verse,
-  }.to_json
+  { translation: translation_as_json(translation), random_verse: verse }.to_json
 end
 
 get '/data/:translation/:book_id' do
@@ -225,22 +206,20 @@ get '/data/:translation/:book_id' do
 
   host = request.base_url
   translation = get_translation
-  chapters = DB[
-    'select distinct book_id, book, chapter from verses where book_id = :book_id and translation_id = :translation_id order by chapter',
-    book_id: params[:book_id],
-    translation_id: translation[:id]
-  ].map do |record|
-    record.merge(url: "#{host}/data/#{translation.fetch(:identifier)}/#{record.fetch(:book_id)}/#{record.fetch(:chapter)}")
-  end
+  chapters =
+    DB[
+      'select distinct book_id, book, chapter from verses where book_id = :book_id and translation_id = :translation_id order by chapter',
+      book_id: params[:book_id],
+      translation_id: translation[:id]
+    ].map do |record|
+      record.merge(
+        url: "#{host}/data/#{translation.fetch(:identifier)}/#{record.fetch(:book_id)}/#{record.fetch(:chapter)}",
+      )
+    end
 
-  unless chapters.any?
-    halt 404, jsonp(error: 'book not found')
-  end
+  halt 404, jsonp(error: 'book not found') unless chapters.any?
 
-  {
-    translation: translation_as_json(translation),
-    chapters:,
-  }.to_json
+  { translation: translation_as_json(translation), chapters: }.to_json
 end
 
 get '/data/:translation/:book_id/:chapter' do
@@ -248,24 +227,20 @@ get '/data/:translation/:book_id/:chapter' do
   headers CORS_HEADERS
 
   translation = get_translation
-  verses = DB[
-    'select book_id, book, chapter, verse, text from verses where book_id = :book_id and chapter = :chapter and translation_id = :translation_id order by chapter, verse',
-    book_id: params[:book_id],
-    chapter: params[:chapter],
-    translation_id: translation[:id]
-  ].to_a
+  verses =
+    DB[
+      'select book_id, book, chapter, verse, text from verses where book_id = :book_id and chapter = :chapter and translation_id = :translation_id order by chapter, verse',
+      book_id: params[:book_id],
+      chapter: params[:chapter],
+      translation_id: translation[:id]
+    ].to_a
 
-  unless verses.any?
-    halt 404, jsonp(error: 'book/chapter not found')
-  end
+  halt 404, jsonp(error: 'book/chapter not found') unless verses.any?
 
-  {
-    translation: translation_as_json(translation),
-    verses:,
-  }.to_json
+  { translation: translation_as_json(translation), verses: }.to_json
 end
 
-options "/:ref" do
+options '/:ref' do
   headers CORS_HEADERS
   200
 end
@@ -307,26 +282,21 @@ end
 
 def render_response(verses:, ref:, translation:)
   verses.map! do |v|
-    {
-      book_id:   v[:book_id],
-      book_name: v[:book],
-      chapter:   v[:chapter],
-      verse:     v[:verse],
-      text:      v[:text]
-    }
+    { book_id: v[:book_id], book_name: v[:book], chapter: v[:chapter], verse: v[:verse], text: v[:text] }
   end
   vn = params[:verse_numbers]
-  verse_text = if vn == 'true'
-                  verses.map { |v| '(' + v[:verse].to_s + ') ' + v[:text] }.join
-                else
-                  verses.map { |v| v[:text] }.join
-                end
+  verse_text =
+    if vn == 'true'
+      verses.map { |v| '(' + v[:verse].to_s + ') ' + v[:text] }.join
+    else
+      verses.map { |v| v[:text] }.join
+    end
   {
-    reference:        ref,
-    verses:           verses,
-    text:             verse_text,
-    translation_id:   translation[:identifier],
+    reference: ref,
+    verses: verses,
+    text: verse_text,
+    translation_id: translation[:identifier],
     translation_name: translation[:name],
-    translation_note: translation[:license]
+    translation_note: translation[:license],
   }
 end

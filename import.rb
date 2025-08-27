@@ -8,34 +8,31 @@ require 'sequel'
 
 Dotenv.load
 
-@options = {
-  bibles_path: './bibles'
-}
+@options = { bibles_path: './bibles' }
 
-OptionParser.new do |opts|
-  opts.banner = 'Usage: ruby import.rb [options]'
+OptionParser
+  .new do |opts|
+    opts.banner = 'Usage: ruby import.rb [options]'
 
-  opts.on('-t', '--translation=NAME', 'Only import a single translation (e.g. eng-ylt.osis.xml)') do |name|
-    @options[:translation] = name
+    opts.on('-t', '--translation=NAME', 'Only import a single translation (e.g. eng-ylt.osis.xml)') do |name|
+      @options[:translation] = name
+    end
+
+    opts.on(
+      '--bibles-path=PATH',
+      'Specify custom path for open-bibles (default: #{@options[:bibles_path].inspect})',
+    ) { |path| @options[:bibles_path] = path }
+
+    opts.on('--overwrite', 'Overwrite any existing data') { @options[:overwrite] = true }
+
+    opts.on('--drop-tables', 'Drop all tables first (and recreate them)') { @options[:drop_tables] = true }
+
+    opts.on('-h', '--help') do
+      puts opts
+      exit
+    end
   end
-
-  opts.on('--bibles-path=PATH', 'Specify custom path for open-bibles (default: #{@options[:bibles_path].inspect})') do |path|
-    @options[:bibles_path] = path
-  end
-
-  opts.on('--overwrite', 'Overwrite any existing data') do
-    @options[:overwrite] = true
-  end
-
-  opts.on('--drop-tables', 'Drop all tables first (and recreate them)') do
-    @options[:drop_tables] = true
-  end
-
-  opts.on('-h', '--help') do
-    puts opts
-    exit
-  end
-end.parse!
+  .parse!
 
 unless ENV['DATABASE_URL']
   puts 'Must set the DATABASE_URL environment variable (probably in .env)'
@@ -92,12 +89,13 @@ importer = Importer.new
 table = File.read("#{@options[:bibles_path]}/README.md").scan(/^ *\|.+\| *$/)
 headings = table.shift.split(/\s*\|\s*/)
 table.shift # junk
-translations = table.map do |row|
-  cells = row.split(/\s*\|\s*/)
-  headings.each_with_index.each_with_object({}) do |(heading, index), hash|
-    hash[heading.downcase] = cells[index] unless heading.empty?
+translations =
+  table.map do |row|
+    cells = row.split(/\s*\|\s*/)
+    headings
+      .each_with_index
+      .each_with_object({}) { |(heading, index), hash| hash[heading.downcase] = cells[index] unless heading.empty? }
   end
-end
 
 translations.each do |translation|
   path = "#{@options[:bibles_path]}/#{translation['filename']}"

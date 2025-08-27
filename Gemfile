@@ -15,6 +15,10 @@ gem 'sequel'
 gem 'sinatra'
 gem 'sinatra-contrib'
 
+group :development do
+  gem 'syntax_tree'
+end
+
 group :test do
   gem 'rack-test'
   gem 'rspec'
