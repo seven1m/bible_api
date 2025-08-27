@@ -14,3 +14,8 @@ gem 'redis'
 gem 'sequel'
 gem 'sinatra'
 gem 'sinatra-contrib'
+
+group :test do
+  gem 'rack-test'
+  gem 'rspec'
+end
