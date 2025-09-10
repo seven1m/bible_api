@@ -1,0 +1,26 @@
+{
+  "name": "Bible API (Python)",
+  "description": "A JSON API for Bible verses and passages",
+  "repository": "https://github.com/andreidemit/bible_api",
+  "keywords": ["bible", "api", "json", "verses", "python", "fastapi"],
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "env": {
+    "DATABASE_URL": {
+      "description": "MySQL database URL"
+    },
+    "REDIS_URL": {
+      "description": "Redis URL for rate limiting"
+    }
+  },
+  "healthchecks": [
+    {
+      "type": "web",
+      "path": "/",
+      "wait_time": 30
+    }
+  ]
+}

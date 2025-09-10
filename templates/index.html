@@ -1,0 +1,214 @@
+<!doctype html>
+<html>
+  <head>
+    <title>bible-api.com</title>
+    <style>
+      dd { margin: 0 0 15px 0; }
+      table { border-collapse: collapse; }
+      th, td { text-align: left; border: 1px solid #ccc; padding: 5px; }
+      dt { font-weight: bold; }
+      dd { margin-left: 20px; }
+      h2 { margin-top: 0; }
+      .section-container { display: flex; flex-direction: column; gap: 20px; margin-bottom: 25px; }
+      section { padding: 20px; background: #eee; border: 1px solid #ccc; }
+      @media (min-width: 1000px) {
+        .section-container { flex-direction: row; }
+        section { flex: 1; }
+      }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  </head>
+  <body>
+    <h1>bible-api.com</h1>
+
+<p>This service provides a <a href="https://en.wikipedia.org/wiki/JSON">JSON</a> API
+for retrieving <a href="https://en.wikipedia.org/wiki/Bible">Bible</a> verses and passages,
+provided by <a href="https://timmorgan.dev">Tim Morgan</a>.</p>
+
+<p>You can get the source code for this app and the open data for its database on
+<a href="https://github.com/seven1m/bible_api">GitHub</a>.</p>
+
+<p>There are two ways to use this service, described below.</p>
+
+<div class="section-container">
+  <section>
+    <h2>User Input API</h2>
+
+    <p>This is the original API, designed to take what a user types and return the matching verse(s).</p>
+
+    <pre><code>{{ host }}/BOOK+CHAPTER:VERSE</code></pre>
+
+    <h3>Examples</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>description</th>
+          <th>link</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>single verse</td>
+          <td><a href="/john 3:16">john 3:16</a></td>
+        </tr>
+        <tr>
+          <td>abbreviated book name</td>
+          <td><a href="/jn 3:16">jn 3:16</a></td>
+        </tr>
+        <tr>
+          <td>hyphen and comma</td>
+          <td><a href="/matt 25:31-33,46">matt 25:31-33,46</a></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Specifying the Translation</h3>
+
+    <p>By default, we use the World English Bible (WEB). You can specify a different translation by
+    providing the <code>translation</code> parameter in the URL. For example:
+    <a href="/john 3:16?translation=kjv">/john 3:16?translation=kjv</a></p>
+
+    <p>See list of available translations below.</p>
+
+    <h3>Single-Chapter Books</h3>
+
+    <p>There are some books of the bible that only contain a single chapter,
+    i.e. Obadiah, Philemon, 2 John, 3 John, and Jude. That means it can be ambiguous to request
+    <code>Jude 1</code>. Do you mean the first chapter of Jude, or do you mean the first verse?
+    This API assumes you want the <strong>first verse</strong>. This seems to be consistent with
+    what most people expect, though it can be inconsistent when compared to other requests:</p>
+
+    <ul>
+      <li><a href="/john+1">john 1</a> (first chapter)</li>
+      <li><a href="/jude+1">jude 1</a> (first verse of only chapter)</li>
+    </ul>
+
+    <p><strong>This is working by design.</strong> If you want the whole chapter/book of Jude
+    (and all single-chapter books), you can change this behavior by either setting a header
+    or passing an extra URL parameter:
+
+    <ol>
+      <li>request header: <code>X-Single-Chapter-Book-Matching: indifferent</code></li>
+      <li>URL parameter: <code>single_chapter_book_matching=indifferent</code> (<a href="/jude 1?single_chapter_book_matching=indifferent">example</a>)</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Parameterized API</h2>
+
+    <p>This service provides a more precise identifier-based API as well.
+    It requires that the translation, book, and chapter be specified exactly in the URL.</p>
+
+    <p>Usage: <code>/data[/TRANSLATION_ID[/BOOK_ID[/CHAPTER]]]</code></p>
+
+    <dl>
+      <dt><code>TRANSLATION_ID</code></dt>
+      <dd>The translation identifier, such as "web" or "kjv".</dd>
+      <dt><code>BOOK_ID</code></dt>
+      <dd>The book id, such as "GEN" or "JHN" (they do not have to be uppercase).</dd>
+      <dt><code>CHAPTER</code></dt>
+      <dd>The chapter number.</dd>
+    </dl>
+
+    <p>If your browser (or an installed browser extension) supports formatting JSON,
+    you can explore the API from <a href="/data">/data</a> and click the embedded URLs
+    to navigate down to a chapter.</p>
+
+    <p>Some examples:</p>
+
+    <table>
+      <thead>
+        <tr><th>description</th><th>link</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>available translations</td><td><a href="/data">/data</a></td></tr>
+        <tr><td>books in WEB translation</td><td><a href="/data/web">/data/web</a></td></tr>
+        <tr><td>chapters in John</td><td><a href="/data/web/JHN">/data/web/JHN</a></td></tr>
+        <tr><td>verses in John 3</td><td><a href="/data/web/JHN/3">/data/web/JHN/3</a></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Random Verse</h3>
+
+    <p>There is an endpoint for getting a random verse.</p>
+
+    <p>Usage: <code>/data/random[/BOOK_IDS]</code></p>
+
+    <dl>
+      <dt><code>BOOK_IDS</code></dt>
+      <dd>a comma-separated list of book IDs (e.g. that which you would get from <a href="/data/web">here</a>, such as "GEN" or "JHN"),
+      or the special strings "OT" or "NT" for all Old Testament or New Testament books, respectively.</dd>
+    </dl>
+
+    <p>Here are some examples:</p>
+
+    <table>
+      <thead>
+        <tr><th>description</th><th>link</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>random verse</td><td><a href="/data/web/random">/data/web/random</a></td></tr>
+        <tr><td>random verse from specified book</td><td><a href="/data/web/random/JHN">/data/web/random/JHN</a></td></tr>
+        <tr><td>random verse from many books</td><td><a href="/data/web/random/MAT,MRK,LUK,JHN">/data/web/random/MAT,MRK,LUK,JHN</a></td></tr>
+        <tr><td>random verse from Old Testament</td><td><a href="/data/web/random/OT">/data/web/random/OT</a></td></tr>
+        <tr><td>random verse from New Testament</td><td><a href="/data/web/random/NT">/data/web/random/NT</a></td></tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<h2>Translations</h2>
+
+<p>Both APIs support these translations:</p>
+
+<table>
+  <tr>
+    <th>language</th>
+    <th>name</th>
+    <th>identifier</th>
+  </tr>
+  {% for translation in translations %}
+    {% if books[translation.id] %}
+    <tr>
+      <td>{{ translation.language }}</td>
+      <td>{{ translation.name }}</td>
+      <td>
+        <a href="/{{ books[translation.id] }}+3:16?translation={{ translation.identifier }}">{{ translation.identifier }}</a>
+        {% if translation.identifier == 'web' %}(default){% endif %}
+      </td>
+    </tr>
+    {% endif %}
+  {% endfor %}
+</table>
+
+<p>To get more translations in this list, three things need to happen:</p>
+
+<ol>
+  <li>Find a public domain or freely-licensed bible translation. This is probably harder than you think.
+    Freely-licensed means the license says basically <em>you can do what you want with it</em> without restriction.
+    Even if you find a bible that is fully downloadable in XML or whatever format, that doesn't mean its license
+    is permissive. You have to check that it is either so old that is in the public domain, or that the copyright owner
+    has explicitly granted free use.</li>
+  <li>Add the XML to the <a href="https://github.com/seven1m/open-bibles">open-bibles repository</a>.</li>
+  <li>Add a language file to the <a href="https://github.com/seven1m/bible_ref">bible_ref repository</a> (if the translation is a new language).</li>
+</ol>
+
+<h2>CORS</h2>
+
+<p>We support <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS">Cross-Origin Resource Sharing (CORS)</a>
+so you can use this API via JavaScript in a web browser.</p>
+
+<h2>Terms of Use</h2>
+
+<p>This service is free for anyone to use as long as you don't abuse my server.
+This service is rate limited to {{ RACK_ATTACK_LIMIT }} requests every {{ RACK_ATTACK_PERIOD }} seconds
+(based on IP address), and this may change in the future. Do <strong>not</strong> use this API to download
+an entire bible; instead, get the data <a href="https://github.com/seven1m/open-bibles">from the source</a>.</p>
+
+<p>I make no guarantees about this service's availability, quality, or correctness.
+In fact, this server can and will go down from time to time because it's just a hobby for me.
+If you need more reliable service, remember you can grab the code and data for this site
+<a href="https://github.com/seven1m/bible_api">here</a> and host it yourself!</p>
+  </body>
+</html>

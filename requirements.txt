@@ -1,0 +1,25 @@
+# Web framework and server
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+jinja2==3.1.4
+
+# Database
+sqlalchemy==2.0.36
+pymysql==1.1.1
+cryptography==43.0.3
+
+# Redis and caching
+redis==5.2.1
+slowapi==0.1.9
+
+# Environment and configuration
+python-dotenv==1.0.1
+
+# JSON and data handling
+pydantic==2.10.3
+
+# Bible reference parsing (we'll need to implement or find equivalent)
+# For now, we'll create our own simple parser
+
+# Utilities
+python-multipart==0.0.19
