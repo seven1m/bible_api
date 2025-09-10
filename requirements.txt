@@ -21,5 +21,8 @@ pydantic==2.10.3
 # Bible reference parsing (we'll need to implement or find equivalent)
 # For now, we'll create our own simple parser
 
+# Azure Blob Storage
+azure-storage-blob==12.23.1
+
 # Utilities
 python-multipart==0.0.19
