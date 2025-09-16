@@ -320,37 +320,19 @@ async def get_book_chapters(request: Request, translation_id: str, book_id: str)
     host = str(request.base_url).rstrip('/')
     translation = get_translation(translation_id)
     
-    # Get all verses for this book to determine available chapters
-    verses = azure_service.get_verses_by_reference(translation_id, book_id, 1)
-    if not verses:
-        # Try getting verses from multiple chapters to build chapter list
-        all_verses = []
-        for ch in range(1, 151):  # Try up to 150 chapters
-            chapter_verses = azure_service.get_verses_by_reference(translation_id, book_id, ch)
-            if chapter_verses:
-                all_verses.extend(chapter_verses)
-            elif ch > 10 and not chapter_verses:  # Stop if no verses found after chapter 10
-                break
-        verses = all_verses
+    # Get available chapters for this book using the new method
+    chapters_info = azure_service.get_chapters_for_book(translation_id, book_id)
     
-    if not verses:
+    if not chapters_info:
         raise HTTPException(status_code=404, detail={"error": "book not found"})
     
-    # Extract unique chapters
-    chapters_set = set()
-    book_name = verses[0]['book'] if verses else book_id
-    book_id_normalized = verses[0]['book_id'] if verses else book_id.upper()
-    
-    for verse in verses:
-        chapters_set.add(verse['chapter'])
-    
     chapter_list = []
-    for chapter_num in sorted(chapters_set):
+    for chapter_info in chapters_info:
         chapter_list.append({
-            "book_id": book_id_normalized,
-            "book": book_name,
-            "chapter": chapter_num,
-            "url": f"{host}/data/{translation['identifier']}/{book_id_normalized}/{chapter_num}"
+            "book_id": chapter_info['book_id'],
+            "book": chapter_info['book_name'],
+            "chapter": chapter_info['chapter'],
+            "url": f"{host}/data/{translation['identifier']}/{chapter_info['book_id']}/{chapter_info['chapter']}"
         })
     
     return {

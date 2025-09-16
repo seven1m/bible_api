@@ -228,90 +228,271 @@ class AzureXMLBibleService:
         translation = self.get_translation_info(translation_id)
         if not translation:
             return []
-        
+
         xml_content = self._get_xml_content(translation['file_path'])
         if not xml_content:
             return []
-        
+
         try:
             root = ET.fromstring(xml_content)
             verses = []
             
-            # Find the book
-            book_element = self._find_book_in_xml(root, book)
+            # Find the book - handle USFX format
+            book_id_normalized = self._normalize_book_id(book)
+            book_element = None
+            
+            # Try USFX format first
+            book_element = root.find(f".//book[@id='{book}']")
+            if not book_element:
+                book_element = root.find(f".//book[@id='{book_id_normalized}']")
+            
+            # Fallback to other formats
+            if not book_element:
+                book_element = self._find_book_in_xml(root, book)
+            
             if not book_element:
                 return []
             
             # Get book name and ID
             book_name = book_element.get('name', book)
-            book_id = book_element.get('id', self._normalize_book_id(book))
+            book_id = book_element.get('id', book_id_normalized)
             
-            # Find verses in the chapter - handle different XML structures
-            verse_elements = []
-            
-            # Try OSIS format first
-            chapter_xpath = f".//*[@osisID and contains(@osisID, '{book_id}.{chapter}')]"
-            osis_verses = root.findall(chapter_xpath)
-            
-            if osis_verses:
-                # OSIS format
-                for verse_elem in osis_verses:
-                    osis_id = verse_elem.get('osisID', '')
-                    parts = osis_id.split('.')
-                    if len(parts) >= 3:
+            # Handle USFX format
+            if root.tag == 'usfx' or 'usfx' in root.tag:
+                # USFX format: verses are marked with <v id="N"/> tags
+                current_chapter = None
+                current_verse = None
+                verse_text = ""
+                
+                # Iterate through all elements in the book
+                for elem in book_element.iter():
+                    if elem.tag == 'c' and 'id' in elem.attrib:
+                        # Chapter marker
                         try:
-                            verse_num = int(parts[2])
-                            if verse_start and verse_num < verse_start:
-                                continue
-                            if verse_end and verse_num > verse_end:
-                                continue
-                            
-                            # Get verse text
-                            text = verse_elem.text or ''
-                            if not text:
-                                # Try to get text from child elements
-                                text = ''.join(verse_elem.itertext())
+                            current_chapter = int(elem.attrib['id'])
+                        except ValueError:
+                            continue
+                    elif elem.tag == 'v' and 'id' in elem.attrib:
+                        # Verse marker - save previous verse if exists
+                        if (current_chapter == chapter and current_verse is not None and 
+                            verse_text.strip() and 
+                            (verse_start is None or current_verse >= verse_start) and
+                            (verse_end is None or current_verse <= verse_end)):
                             
                             verses.append({
                                 'id': len(verses) + 1,
                                 'book_id': book_id,
                                 'book': book_name,
                                 'chapter': chapter,
-                                'verse': verse_num,
-                                'text': text.strip(),
+                                'verse': current_verse,
+                                'text': verse_text.strip(),
                                 'translation_id': translation['identifier']
                             })
+                        
+                        # Start new verse
+                        try:
+                            current_verse = int(elem.attrib['id'])
+                            verse_text = ""
                         except ValueError:
                             continue
+                    elif current_chapter == chapter and current_verse is not None:
+                        # Collect text for current verse
+                        if elem.text:
+                            verse_text += elem.text
+                        if elem.tail:
+                            verse_text += elem.tail
+                
+                # Don't forget the last verse
+                if (current_chapter == chapter and current_verse is not None and 
+                    verse_text.strip() and 
+                    (verse_start is None or current_verse >= verse_start) and
+                    (verse_end is None or current_verse <= verse_end)):
+                    
+                    verses.append({
+                        'id': len(verses) + 1,
+                        'book_id': book_id,
+                        'book': book_name,
+                        'chapter': chapter,
+                        'verse': current_verse,
+                        'text': verse_text.strip(),
+                        'translation_id': translation['identifier']
+                    })
+            
             else:
-                # Try standard chapter/verse structure
-                chapter_elem = book_element.find(f".//chapter[@number='{chapter}']")
-                if chapter_elem is not None:
-                    for verse_elem in chapter_elem.findall('verse'):
-                        try:
-                            verse_num = int(verse_elem.get('number', 0))
-                            if verse_start and verse_num < verse_start:
+                # Handle other XML formats (OSIS, standard chapter/verse)
+                verse_elements = []
+                
+                # Try OSIS format first - use a simpler approach
+                chapter_prefix = f"{book_id}.{chapter}."
+                osis_verses = []
+                
+                # Find all elements with osisID attribute
+                for elem in root.iter():
+                    osis_id = elem.get('osisID')
+                    if osis_id and osis_id.startswith(chapter_prefix):
+                        osis_verses.append(elem)
+                
+                if osis_verses:
+                    # OSIS format
+                    for verse_elem in osis_verses:
+                        osis_id = verse_elem.get('osisID', '')
+                        parts = osis_id.split('.')
+                        if len(parts) >= 3:
+                            try:
+                                verse_num = int(parts[2])
+                                if verse_start and verse_num < verse_start:
+                                    continue
+                                if verse_end and verse_num > verse_end:
+                                    continue
+                                
+                                # Get verse text
+                                text = verse_elem.text or ''
+                                if not text:
+                                    # Try to get text from child elements
+                                    text = ''.join(verse_elem.itertext())
+                                
+                                verses.append({
+                                    'id': len(verses) + 1,
+                                    'book_id': book_id,
+                                    'book': book_name,
+                                    'chapter': chapter,
+                                    'verse': verse_num,
+                                    'text': text.strip(),
+                                    'translation_id': translation['identifier']
+                                })
+                            except ValueError:
                                 continue
-                            if verse_end and verse_num > verse_end:
+                else:
+                    # Try standard chapter/verse structure
+                    chapter_elem = book_element.find(f".//chapter[@number='{chapter}']")
+                    if chapter_elem is not None:
+                        for verse_elem in chapter_elem.findall('verse'):
+                            try:
+                                verse_num = int(verse_elem.get('number', 0))
+                                if verse_start and verse_num < verse_start:
+                                    continue
+                                if verse_end and verse_num > verse_end:
+                                    continue
+                                
+                                text = verse_elem.text or ''
+                                if not text:
+                                    text = ''.join(verse_elem.itertext())
+                                
+                                verses.append({
+                                    'id': len(verses) + 1,
+                                    'book_id': book_id,
+                                    'book': book_name,
+                                    'chapter': chapter,
+                                    'verse': verse_num,
+                                    'text': text.strip(),
+                                    'translation_id': translation['identifier']
+                                })
+                            except ValueError:
                                 continue
-                            
-                            text = verse_elem.text or ''
-                            if not text:
-                                text = ''.join(verse_elem.itertext())
-                            
-                            verses.append({
-                                'id': len(verses) + 1,
-                                'book_id': book_id,
-                                'book': book_name,
-                                'chapter': chapter,
-                                'verse': verse_num,
-                                'text': text.strip(),
-                                'translation_id': translation['identifier']
-                            })
-                        except ValueError:
-                            continue
             
             return sorted(verses, key=lambda x: x['verse'])
+            
+        except ET.ParseError as e:
+            print(f"XML parsing error: {e}")
+            return []
+    
+    def get_chapters_for_book(self, translation_id: str, book: str) -> List[Dict[str, Any]]:
+        """Get available chapters for a book"""
+        translation = self.get_translation_info(translation_id)
+        if not translation:
+            return []
+
+        xml_content = self._get_xml_content(translation['file_path'])
+        if not xml_content:
+            return []
+
+        try:
+            root = ET.fromstring(xml_content)
+            chapters = []
+            
+            # Find the book - handle USFX format
+            book_id_normalized = self._normalize_book_id(book)
+            book_element = None
+            
+            # Try USFX format first
+            book_element = root.find(f".//book[@id='{book}']")
+            if not book_element:
+                book_element = root.find(f".//book[@id='{book_id_normalized}']")
+            
+            # Fallback to other formats
+            if not book_element:
+                book_element = self._find_book_in_xml(root, book)
+            
+            if not book_element:
+                return []
+            
+            # Get book name and ID
+            book_name = book_element.get('name', book)
+            book_id = book_element.get('id', book_id_normalized)
+            
+            # Handle USFX format
+            if root.tag == 'usfx' or 'usfx' in root.tag:
+                # USFX format: chapters are marked with <c id="N"/> tags
+                chapters_found = set()
+                
+                # Iterate through all elements in the book to find chapter markers
+                for elem in book_element.iter():
+                    if elem.tag == 'c' and 'id' in elem.attrib:
+                        try:
+                            chapter_num = int(elem.attrib['id'])
+                            chapters_found.add(chapter_num)
+                        except ValueError:
+                            continue
+                
+                # Create chapter list
+                for chapter_num in sorted(chapters_found):
+                    chapters.append({
+                        'book_id': book_id,
+                        'book_name': book_name,
+                        'chapter': chapter_num
+                    })
+            
+            else:
+                # Handle other XML formats (OSIS, standard chapter/verse)
+                # Try OSIS format first
+                for elem in root.iter():
+                    osis_id = elem.get('osisID')
+                    if osis_id and osis_id.startswith(f"{book_id}."):
+                        parts = osis_id.split('.')
+                        if len(parts) >= 2:
+                            try:
+                                chapter_num = int(parts[1])
+                                chapters.append({
+                                    'book_id': book_id,
+                                    'book_name': book_name,
+                                    'chapter': chapter_num
+                                })
+                            except ValueError:
+                                continue
+                
+                # If no OSIS chapters found, try standard structure
+                if not chapters:
+                    for chapter_elem in book_element.findall('.//chapter'):
+                        try:
+                            chapter_num = int(chapter_elem.get('number', 0))
+                            chapters.append({
+                                'book_id': book_id,
+                                'book_name': book_name,
+                                'chapter': chapter_num
+                            })
+                        except ValueError:
+                            continue
+            
+            # Remove duplicates and sort
+            seen = set()
+            unique_chapters = []
+            for chapter in chapters:
+                chapter_num = chapter['chapter']
+                if chapter_num not in seen:
+                    seen.add(chapter_num)
+                    unique_chapters.append(chapter)
+            
+            return sorted(unique_chapters, key=lambda x: x['chapter'])
             
         except ET.ParseError as e:
             print(f"XML parsing error: {e}")
