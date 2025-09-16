@@ -20,10 +20,10 @@ def test_imports():
         return False
     
     try:
-        from import_bible import BibleImporter
-        print("✓ Bible importer imports successfully")
+        from azure_xml_service import AzureXMLBibleService
+        print("✓ Azure XML service imports successfully")
     except Exception as e:
-        print(f"✗ Failed to import Bible importer: {e}")
+        print(f"✗ Failed to import Azure XML service: {e}")
         return False
     
     return True
@@ -100,31 +100,27 @@ def test_app_routes():
         return True
 
 def test_data_models():
-    """Test database model definitions"""
-    print("\nTesting data models...")
+    """Test Azure service availability"""
+    print("\nTesting Azure service...")
     
     try:
-        from main import Translation, Verse, Base
+        from main import azure_service
         
-        # Check that models have expected attributes
-        translation_attrs = ['id', 'identifier', 'name', 'language', 'language_code', 'license']
-        verse_attrs = ['id', 'book_num', 'book_id', 'book', 'chapter', 'verse', 'text', 'translation_id']
+        if azure_service is None:
+            print("✗ Azure service not initialized")
+            return False
         
-        for attr in translation_attrs:
-            if not hasattr(Translation, attr):
-                print(f"✗ Translation model missing attribute: {attr}")
-                return False
+        # Test that we can get translations
+        translations = azure_service.list_translations()
+        if not translations:
+            print("✗ No translations available from Azure service")
+            return False
         
-        for attr in verse_attrs:
-            if not hasattr(Verse, attr):
-                print(f"✗ Verse model missing attribute: {attr}")
-                return False
-        
-        print("✓ Database models have all expected attributes")
+        print(f"✓ Azure service available with {len(translations)} translations")
         return True
     
     except Exception as e:
-        print(f"✗ Error testing data models: {e}")
+        print(f"✗ Error testing Azure service: {e}")
         return False
 
 def test_template_exists():

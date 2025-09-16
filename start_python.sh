@@ -49,16 +49,16 @@ if [[ ! -f .env ]]; then
     echo ""
     echo "⚙️  Creating sample .env file..."
     cat > .env << EOF
-# Database configuration
-DATABASE_URL=mysql://user:password@localhost/bible_api
-
-# Redis configuration for rate limiting
-REDIS_URL=redis://localhost:6379
+# Azure Blob Storage configuration
+AZURE_STORAGE_CONNECTION_STRING=your_azure_storage_connection_string
+AZURE_STORAGE_ACCOUNT_NAME=your_account_name
+AZURE_STORAGE_ACCOUNT_KEY=your_account_key
+AZURE_CONTAINER_NAME=bible-translations
 
 # Server configuration
 PORT=8000
 EOF
-    echo "✓ Created .env file. Please update with your database and Redis settings."
+    echo "✓ Created .env file. Please update with your Azure Storage settings."
 else
     echo "✓ .env file already exists"
 fi
@@ -72,9 +72,9 @@ echo ""
 echo "🎉 Setup complete!"
 echo ""
 echo "Next steps:"
-echo "1. Set up your MySQL database and Redis server"
-echo "2. Update the .env file with your database and Redis URLs"
-echo "3. Import Bible data: $PYTHON_CMD import_bible.py"
+echo "1. Set up your Azure Blob Storage account and container"
+echo "2. Update the .env file with your Azure Storage connection details"
+echo "3. Upload Bible translation XML files to your Azure Storage container"
 echo "4. Start the server: $PYTHON_CMD -m uvicorn main:app --reload --host 0.0.0.0 --port 8000"
 echo ""
 echo "📚 Documentation:"
@@ -85,5 +85,5 @@ echo ""
 echo "🔄 Migration from Ruby:"
 echo "   • The Python version maintains full API compatibility"
 echo "   • All endpoints work exactly the same as the Ruby version"
-echo "   • Database schema is identical"
-echo "   • You can use the same database data"
+echo "   • Data is now served from Azure Blob Storage instead of database"
+echo "   • XML files are parsed dynamically for verses"

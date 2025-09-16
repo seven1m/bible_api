@@ -5,18 +5,12 @@ import re
 from typing import Optional, Dict, List, Any
 from urllib.parse import unquote
 
-from fastapi import FastAPI, Request, HTTPException, Query, Depends
+from fastapi import FastAPI, Request, HTTPException, Query
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Text, select, func, and_
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.declarative import declarative_base
-import redis
 from dotenv import load_dotenv
+from azure_xml_service import AzureXMLBibleService
 
 # Load environment variables
 load_dotenv()
@@ -24,11 +18,16 @@ load_dotenv()
 # Initialize FastAPI app
 app = FastAPI(title="Bible API", description="A JSON API for Bible verses and passages")
 
-# Redis for rate limiting
-redis_client = redis.from_url(os.getenv('REDIS_URL', 'redis://localhost:6379'))
-limiter = Limiter(key_func=get_remote_address, storage_uri=os.getenv('REDIS_URL', 'redis://localhost:6379'))
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# Initialize Azure Bible Service (replaces database)
+try:
+    print("Initializing Azure Bible Service...")
+    azure_service = AzureXMLBibleService()
+    print(f"✓ Azure service initialized successfully")
+except Exception as e:
+    print(f"✗ Failed to initialize Azure Bible Service: {e}")
+    import traceback
+    traceback.print_exc()
+    azure_service = None
 
 # CORS middleware
 app.add_middleware(
@@ -38,128 +37,63 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
-# Database setup
-DATABASE_URL = os.getenv('DATABASE_URL', '')
-if DATABASE_URL:
-    DATABASE_URL = DATABASE_URL.replace('mysql://', 'mysql+pymysql://')
-    # Add charset to URL instead of using deprecated encoding parameter
-    if 'charset' not in DATABASE_URL:
-        connector = '&' if '?' in DATABASE_URL else '?'
-        DATABASE_URL += f'{connector}charset=utf8mb4'
-    engine = create_engine(DATABASE_URL, pool_size=10)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-else:
-    # For testing without database
-    engine = None
-    SessionLocal = None
-
-Base = declarative_base()
-
-# Database models
-class Translation(Base):
-    __tablename__ = 'translations'
-    
-    id = Column(Integer, primary_key=True)
-    identifier = Column(String(255))
-    name = Column(String(255))
-    language = Column(String(255))
-    language_code = Column(String(255))
-    license = Column(String(255))
-
-class Verse(Base):
-    __tablename__ = 'verses'
-    
-    id = Column(Integer, primary_key=True)
-    book_num = Column(Integer)
-    book_id = Column(String(255))
-    book = Column(String(255))
-    chapter = Column(Integer)
-    verse = Column(Integer)
-    text = Column(Text)
-    translation_id = Column(Integer)
-
 # Templates
 templates = Jinja2Templates(directory="templates")
 
-# Rate limiting constants
-RACK_ATTACK_LIMIT = 15
-RACK_ATTACK_PERIOD = 30
-
 # Helper functions
-def get_db():
-    if not SessionLocal:
-        raise HTTPException(status_code=500, detail="Database not configured")
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-def get_translation(db: Session, identifier: str = None) -> Translation:
-    """Get translation by identifier, defaulting to WEB"""
-    if not identifier:
-        identifier = 'web'
+def get_translation(identifier: Optional[str] = None) -> Dict[str, Any]:
+    """Get translation by identifier, defaulting to first available"""
+    if not azure_service:
+        raise HTTPException(status_code=500, detail="Azure service not available")
     
-    translation = db.query(Translation).filter(Translation.identifier == identifier.lower()).first()
+    if not identifier:
+        # Get first available translation
+        translations = azure_service.list_translations()
+        if translations:
+            identifier = translations[0]['identifier']
+        else:
+            raise HTTPException(status_code=500, detail="No translations available")
+    
+    translation = azure_service.get_translation_info(identifier.lower())
     if not translation:
         raise HTTPException(status_code=404, detail={"error": "translation not found"})
     return translation
 
-def translation_as_dict(translation: Translation) -> Dict[str, Any]:
-    """Convert translation object to dictionary"""
+def translation_as_dict(translation: Dict[str, Any]) -> Dict[str, Any]:
+    """Convert translation object to dictionary (compatibility function)"""
     return {
-        "identifier": translation.identifier,
-        "name": translation.name,
-        "language": translation.language,
-        "language_code": translation.language_code,
-        "license": translation.license
+        "identifier": translation.get("identifier"),
+        "name": translation.get("name"),
+        "language": translation.get("language"),
+        "language_code": translation.get("language_code"),
+        "license": translation.get("license")
     }
 
-def get_verse_id(db: Session, ref: Dict[str, Any], translation_id: int, last: bool = False) -> Optional[int]:
-    """Get verse ID by reference"""
-    query = db.query(Verse.id).filter(
-        Verse.book_id == ref['book'],
-        Verse.chapter == ref['chapter'],
-        Verse.translation_id == translation_id
-    )
+def get_verses(ranges: List[tuple], translation_id: str) -> Optional[List[Dict]]:
+    """Get verses by ranges using Azure service"""
+    if not azure_service:
+        return None
     
-    if 'verse' in ref and ref['verse']:
-        query = query.filter(Verse.verse == ref['verse'])
-    
-    if last:
-        query = query.order_by(Verse.id.desc())
-    
-    result = query.first()
-    return result[0] if result else None
-
-def get_verses(db: Session, ranges: List[tuple], translation_id: int) -> Optional[List[Dict]]:
-    """Get verses by ranges"""
     all_verses = []
     for ref_from, ref_to in ranges:
-        start_id = get_verse_id(db, ref_from, translation_id)
-        stop_id = get_verse_id(db, ref_to, translation_id, last=True)
+        # Extract range information
+        book = ref_from['book']
+        chapter = ref_from['chapter']
+        verse_start = ref_from.get('verse')
+        verse_end = ref_to.get('verse') if ref_to['chapter'] == chapter else None
         
-        if not start_id or not stop_id:
-            return None
-            
-        verses = db.query(Verse).filter(
-            Verse.id >= start_id,
-            Verse.id <= stop_id
-        ).all()
-        
-        for verse in verses:
-            all_verses.append({
-                'id': verse.id,
-                'book_id': verse.book_id,
-                'book': verse.book,
-                'chapter': verse.chapter,
-                'verse': verse.verse,
-                'text': verse.text,
-                'translation_id': verse.translation_id
-            })
+        verses = azure_service.get_verses_by_reference(
+            translation_id, book, chapter, verse_start, verse_end
+        )
+        all_verses.extend(verses)
     
-    return all_verses
+    return all_verses if all_verses else None
 
+def get_random_verse(translation: Dict[str, Any], books: Optional[List[str]] = None) -> Optional[Dict]:
+    """Get a random verse using Azure service"""
+    if not azure_service:
+        return None
+    
 def parse_bible_reference(ref_string: str) -> Optional[List[tuple]]:
     """Simple Bible reference parser (simplified version)"""
     # This is a simplified parser. In production, we'd want a more robust solution
@@ -198,7 +132,7 @@ def parse_bible_reference(ref_string: str) -> Optional[List[tuple]]:
     
     return [(ref_from, ref_to)]
 
-def render_verse_response(verses: List[Dict], ref: str, translation: Translation, verse_numbers: bool = False) -> Dict[str, Any]:
+def render_verse_response(verses: List[Dict], ref: str, translation: Dict[str, Any], verse_numbers: bool = False) -> Dict[str, Any]:
     """Render verse response in the expected format"""
     formatted_verses = []
     for v in verses:
@@ -219,17 +153,10 @@ def render_verse_response(verses: List[Dict], ref: str, translation: Translation
         "reference": ref,
         "verses": formatted_verses,
         "text": verse_text,
-        "translation_id": translation.identifier,
-        "translation_name": translation.name,
-        "translation_note": translation.license
+        "translation_id": translation['identifier'],
+        "translation_name": translation['name'],
+        "translation_note": translation['license']
     }
-
-def get_random_verse(db: Session, translation: Translation, books: Optional[List[str]] = None) -> Optional[Dict]:
-    """Get a random verse"""
-    query = db.query(Verse).filter(Verse.translation_id == translation.id)
-    
-    if books:
-        query = query.filter(Verse.book_id.in_(books))
     
     # Use ORDER BY RAND() equivalent
     verse = query.order_by(func.rand()).first()
@@ -260,18 +187,17 @@ NT_BOOKS = PROTESTANT_BOOKS[PROTESTANT_BOOKS.index('MAT'):]
 
 # Routes
 @app.get("/", response_class=HTMLResponse)
-@limiter.limit(f"{RACK_ATTACK_LIMIT}/{RACK_ATTACK_PERIOD}seconds")
-async def root(request: Request, random: Optional[str] = None, translation: Optional[str] = None, db: Session = Depends(get_db)):
+async def root(request: Request, random: Optional[str] = None, translation: Optional[str] = None):
     """Main page - returns API documentation or random verse"""
     
-    # Check if database tables exist
-    if not engine.dialect.has_table(engine.connect(), 'verses'):
-        raise HTTPException(status_code=500, detail="Please run import script according to README")
+    # Check if Azure service is available
+    if not azure_service:
+        raise HTTPException(status_code=500, detail="Azure Bible service not available")
     
     if random is not None:
         # Legacy random API support
-        trans = get_translation(db, translation)
-        verse = get_random_verse(db, trans, PROTESTANT_BOOKS)
+        trans = get_translation(translation)
+        verse = get_random_verse(trans, PROTESTANT_BOOKS)
         if not verse:
             raise HTTPException(status_code=404, detail={"error": "error getting verse"})
         
@@ -280,54 +206,62 @@ async def root(request: Request, random: Optional[str] = None, translation: Opti
         return JSONResponse(content=response)
     else:
         # Return HTML documentation page
-        translations = db.query(Translation).order_by(Translation.language, Translation.name).all()
-        books_query = db.query(Verse.translation_id, Verse.book).filter(Verse.book_id == 'JHN').group_by(Verse.translation_id, Verse.book).all()
-        books = {book.translation_id: book.book for book in books_query}
+        translations = azure_service.list_translations()
+        # Get example books from first translation
+        books = {}
+        if translations:
+            first_trans = translations[0]
+            books_list = azure_service.get_books_for_translation(first_trans['identifier'])
+            books = {first_trans['identifier']: books_list[0]['name'] if books_list else 'John'}
         
         return templates.TemplateResponse("index.html", {
             "request": request,
             "translations": translations,
             "books": books,
-            "host": str(request.base_url).rstrip('/'),
-            "RACK_ATTACK_LIMIT": RACK_ATTACK_LIMIT,
-            "RACK_ATTACK_PERIOD": RACK_ATTACK_PERIOD
+            "host": str(request.base_url).rstrip('/')
         })
 
 @app.get("/data")
-@limiter.limit(f"{RACK_ATTACK_LIMIT}/{RACK_ATTACK_PERIOD}seconds")
-async def list_translations(request: Request, db: Session = Depends(get_db)):
+async def list_translations(request: Request):
     """List all available translations"""
+    if not azure_service:
+        raise HTTPException(status_code=500, detail="Azure Bible service not available")
+    
     host = str(request.base_url).rstrip('/')
-    translations = db.query(Translation).order_by(Translation.language, Translation.name).all()
+    print("DEBUG: Getting translations from Azure service")
+    translations = azure_service.list_translations()
+    print(f"DEBUG: Found {len(translations)} translations")
     
     result = {
         "translations": [
-            {**translation_as_dict(t), "url": f"{host}/data/{t.identifier}"}
+            {**translation_as_dict(t), "url": f"{host}/data/{t['identifier']}"}
             for t in translations
         ]
     }
     return result
 
 @app.get("/data/{translation_id}")
-@limiter.limit(f"{RACK_ATTACK_LIMIT}/{RACK_ATTACK_PERIOD}seconds")
-async def get_translation_books(request: Request, translation_id: str, db: Session = Depends(get_db)):
+async def get_translation_books(request: Request, translation_id: str):
     """Get books in a translation"""
+    if not azure_service:
+        raise HTTPException(status_code=500, detail="Azure Bible service not available")
+    
     host = str(request.base_url).rstrip('/')
-    translation = get_translation(db, translation_id)
+    translation = get_translation(translation_id)
     
     # Get available books for this translation
-    book_ids = db.query(Verse.book_id, Verse.book).filter(
-        Verse.translation_id == translation.id,
-        Verse.book_id.in_(PROTESTANT_BOOKS)
-    ).distinct().all()
+    all_books = azure_service.get_books_for_translation(translation_id)
     
+    # Filter to Protestant books only
     books = []
-    for book_id, book_name in book_ids:
-        books.append({
-            "id": book_id,
-            "name": book_name,
-            "url": f"{host}/data/{translation.identifier}/{book_id}"
-        })
+    for book in all_books:
+        book_id = book['id'].upper()
+        if book_id in PROTESTANT_BOOKS:
+            books.append({
+                "id": book_id,
+                "name": book['name'],
+                "url": f"{host}/data/{translation['identifier']}/{book_id}"
+            })
     
     return {
         "translation": translation_as_dict(translation),
@@ -335,11 +269,13 @@ async def get_translation_books(request: Request, translation_id: str, db: Sessi
     }
 
 @app.get("/data/{translation_id}/random")
-@limiter.limit(f"{RACK_ATTACK_LIMIT}/{RACK_ATTACK_PERIOD}seconds")
-async def get_random_verse_endpoint(request: Request, translation_id: str, db: Session = Depends(get_db)):
+async def get_random_verse_endpoint(request: Request, translation_id: str):
     """Get a random verse from a translation"""
-    translation = get_translation(db, translation_id)
-    verse = get_random_verse(db, translation, PROTESTANT_BOOKS)
+    if not azure_service:
+        raise HTTPException(status_code=500, detail="Azure Bible service not available")
+    
+    translation = get_translation(translation_id)
+    verse = get_random_verse(translation, PROTESTANT_BOOKS)
     
     if not verse:
         raise HTTPException(status_code=404, detail={"error": "error getting verse"})
@@ -350,10 +286,12 @@ async def get_random_verse_endpoint(request: Request, translation_id: str, db: S
     }
 
 @app.get("/data/{translation_id}/random/{book_id}")
-@limiter.limit(f"{RACK_ATTACK_LIMIT}/{RACK_ATTACK_PERIOD}seconds")
-async def get_random_verse_by_book(request: Request, translation_id: str, book_id: str, db: Session = Depends(get_db)):
+async def get_random_verse_by_book(request: Request, translation_id: str, book_id: str):
     """Get a random verse from specific book(s)"""
-    translation = get_translation(db, translation_id)
+    if not azure_service:
+        raise HTTPException(status_code=500, detail="Azure Bible service not available")
+    
+    translation = get_translation(translation_id)
     book_id = book_id.upper()
     
     if book_id == 'OT':
@@ -362,15 +300,9 @@ async def get_random_verse_by_book(request: Request, translation_id: str, book_i
         books = NT_BOOKS
     else:
         books = book_id.split(',')
-        # Verify books exist for this translation
-        existing_book = db.query(Verse).filter(
-            Verse.book_id.in_(books),
-            Verse.translation_id == translation.id
-        ).first()
-        if not existing_book:
-            raise HTTPException(status_code=404, detail={"error": "book not found"})
+        # For Azure service, we'll trust that the books exist and let the service handle it
     
-    verse = get_random_verse(db, translation, books)
+    verse = get_random_verse(translation, books)
     if not verse:
         raise HTTPException(status_code=404, detail={"error": "error getting verse"})
     
@@ -380,27 +312,45 @@ async def get_random_verse_by_book(request: Request, translation_id: str, book_i
     }
 
 @app.get("/data/{translation_id}/{book_id}")
-@limiter.limit(f"{RACK_ATTACK_LIMIT}/{RACK_ATTACK_PERIOD}seconds")
-async def get_book_chapters(request: Request, translation_id: str, book_id: str, db: Session = Depends(get_db)):
+async def get_book_chapters(request: Request, translation_id: str, book_id: str):
     """Get chapters in a book"""
+    if not azure_service:
+        raise HTTPException(status_code=500, detail="Azure Bible service not available")
+    
     host = str(request.base_url).rstrip('/')
-    translation = get_translation(db, translation_id)
+    translation = get_translation(translation_id)
     
-    chapters = db.query(Verse.book_id, Verse.book, Verse.chapter).filter(
-        Verse.book_id == book_id.upper(),
-        Verse.translation_id == translation.id
-    ).distinct().order_by(Verse.chapter).all()
+    # Get all verses for this book to determine available chapters
+    verses = azure_service.get_verses_by_reference(translation_id, book_id, 1)
+    if not verses:
+        # Try getting verses from multiple chapters to build chapter list
+        all_verses = []
+        for ch in range(1, 151):  # Try up to 150 chapters
+            chapter_verses = azure_service.get_verses_by_reference(translation_id, book_id, ch)
+            if chapter_verses:
+                all_verses.extend(chapter_verses)
+            elif ch > 10 and not chapter_verses:  # Stop if no verses found after chapter 10
+                break
+        verses = all_verses
     
-    if not chapters:
+    if not verses:
         raise HTTPException(status_code=404, detail={"error": "book not found"})
     
+    # Extract unique chapters
+    chapters_set = set()
+    book_name = verses[0]['book'] if verses else book_id
+    book_id_normalized = verses[0]['book_id'] if verses else book_id.upper()
+    
+    for verse in verses:
+        chapters_set.add(verse['chapter'])
+    
     chapter_list = []
-    for chapter in chapters:
+    for chapter_num in sorted(chapters_set):
         chapter_list.append({
-            "book_id": chapter.book_id,
-            "book": chapter.book,
-            "chapter": chapter.chapter,
-            "url": f"{host}/data/{translation.identifier}/{chapter.book_id}/{chapter.chapter}"
+            "book_id": book_id_normalized,
+            "book": book_name,
+            "chapter": chapter_num,
+            "url": f"{host}/data/{translation['identifier']}/{book_id_normalized}/{chapter_num}"
         })
     
     return {
@@ -409,16 +359,14 @@ async def get_book_chapters(request: Request, translation_id: str, book_id: str,
     }
 
 @app.get("/data/{translation_id}/{book_id}/{chapter}")
-@limiter.limit(f"{RACK_ATTACK_LIMIT}/{RACK_ATTACK_PERIOD}seconds")
-async def get_chapter_verses(request: Request, translation_id: str, book_id: str, chapter: int, db: Session = Depends(get_db)):
+async def get_chapter_verses(request: Request, translation_id: str, book_id: str, chapter: int):
     """Get verses in a chapter"""
-    translation = get_translation(db, translation_id)
+    if not azure_service:
+        raise HTTPException(status_code=500, detail="Azure Bible service not available")
     
-    verses = db.query(Verse).filter(
-        Verse.book_id == book_id.upper(),
-        Verse.chapter == chapter,
-        Verse.translation_id == translation.id
-    ).order_by(Verse.chapter, Verse.verse).all()
+    translation = get_translation(translation_id)
+    
+    verses = azure_service.get_verses_by_reference(translation_id, book_id, chapter)
     
     if not verses:
         raise HTTPException(status_code=404, detail={"error": "book/chapter not found"})
@@ -426,11 +374,11 @@ async def get_chapter_verses(request: Request, translation_id: str, book_id: str
     verse_list = []
     for verse in verses:
         verse_list.append({
-            "book_id": verse.book_id,
-            "book": verse.book,
-            "chapter": verse.chapter,
-            "verse": verse.verse,
-            "text": verse.text
+            "book_id": verse['book_id'],
+            "book": verse['book'],
+            "chapter": verse['chapter'],
+            "verse": verse['verse'],
+            "text": verse['text']
         })
     
     return {
@@ -444,25 +392,26 @@ async def options_handler():
     return {}
 
 @app.get("/{ref:path}")
-@limiter.limit(f"{RACK_ATTACK_LIMIT}/{RACK_ATTACK_PERIOD}seconds")
 async def get_verse_by_reference(
     request: Request,
     ref: str, 
     translation: Optional[str] = None,
     verse_numbers: Optional[str] = None,
-    single_chapter_book_matching: Optional[str] = None,
-    db: Session = Depends(get_db)
+    single_chapter_book_matching: Optional[str] = None
 ):
     """Get verse(s) by Bible reference"""
+    if not azure_service:
+        raise HTTPException(status_code=500, detail="Azure Bible service not available")
+    
     ref_string = unquote(ref).replace('+', ' ')
     
-    trans = get_translation(db, translation)
+    trans = get_translation(translation)
     ranges = parse_bible_reference(ref_string)
     
     if not ranges:
         raise HTTPException(status_code=404, detail={"error": "not found"})
     
-    verses = get_verses(db, ranges, trans.id)
+    verses = get_verses(ranges, trans['identifier'])
     if not verses:
         raise HTTPException(status_code=404, detail={"error": "not found"})
     

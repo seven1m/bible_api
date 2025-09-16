@@ -1,1 +1,1 @@
-web: bundle exec puma -C config/puma.rb
+web: python -m uvicorn main:app --host 0.0.0.0 --port $PORT

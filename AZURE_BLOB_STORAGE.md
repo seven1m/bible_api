@@ -15,14 +15,14 @@ Set one of the following environment variable combinations:
 ### Option 1: Connection String (Recommended)
 ```bash
 AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=mykey;EndpointSuffix=core.windows.net"
-AZURE_STORAGE_CONTAINER_NAME="bibles"  # Optional, defaults to "bibles"
+AZURE_CONTAINER_NAME="bible-translations"  # Optional, defaults to "bible-translations"
 ```
 
 ### Option 2: Account Name and Key
 ```bash
 AZURE_STORAGE_ACCOUNT_NAME="mystorageaccount"
 AZURE_STORAGE_ACCOUNT_KEY="myaccountkey"
-AZURE_STORAGE_CONTAINER_NAME="bibles"  # Optional, defaults to "bibles"
+AZURE_CONTAINER_NAME="bible-translations"  # Optional, defaults to "bible-translations"
 ```
 
 ## Setup Steps
@@ -49,7 +49,7 @@ az storage account create \
 
 # Create container
 az storage container create \
-  --name bibles \
+  --name bible-translations \
   --account-name yourstorageaccount
 
 # Get connection string
@@ -58,20 +58,46 @@ az storage account show-connection-string \
   --resource-group bible-api-rg
 ```
 
+## Container Structure
+
+The Azure Blob Storage container should follow this folder structure:
+
+```
+bible-translations/
+├── english/
+│   ├── kjv.xml
+│   ├── esv.xml
+│   ├── niv.xml
+│   └── ...
+├── romanian/
+│   ├── cornilescu.xml
+│   ├── reina-valera.xml
+│   └── ...
+└── (legacy files in root for backwards compatibility)
+```
+
 ### 2. Upload Bible XML Files
 
 #### Using Azure Portal:
 1. Navigate to your storage account
-2. Go to the "bibles" container
-3. Upload your XML files
+2. Go to the "bible-translations" container
+3. Create folders: `english/` and `romanian/`
+4. Upload your XML files to the appropriate language folder
 
 #### Using Azure CLI:
 ```bash
-# Upload files
+# Upload English files
 az storage blob upload \
-  --file path/to/eng-kjv.osis.xml \
-  --name eng-kjv.osis.xml \
-  --container-name bibles \
+  --file path/to/kjv.xml \
+  --name english/kjv.xml \
+  --container-name bible-translations \
+  --connection-string "$AZURE_STORAGE_CONNECTION_STRING"
+
+# Upload Romanian files
+az storage blob upload \
+  --file path/to/cornilescu.xml \
+  --name romanian/cornilescu.xml \
+  --container-name bible-translations \
   --connection-string "$AZURE_STORAGE_CONNECTION_STRING"
 ```
 
@@ -83,7 +109,7 @@ import os
 # Initialize client
 connection_string = "your_connection_string_here"
 blob_service_client = BlobServiceClient.from_connection_string(connection_string)
-container_name = "bibles"
+container_name = "bible-translations"
 
 # Upload a file
 def upload_bible_file(local_file_path, blob_name):
@@ -96,7 +122,8 @@ def upload_bible_file(local_file_path, blob_name):
     print(f"Uploaded {blob_name}")
 
 # Example usage
-upload_bible_file("bibles/eng-kjv.osis.xml", "eng-kjv.osis.xml")
+upload_bible_file("bibles/kjv.xml", "english/kjv.xml")
+upload_bible_file("bibles/cornilescu.xml", "romanian/cornilescu.xml")
 ```
 
 ### 3. Configure Your Application
@@ -108,7 +135,7 @@ DATABASE_URL=mysql+pymysql://user:password@host:port/database
 
 # Azure Blob Storage configuration
 AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;AccountName=youraccount;AccountKey=yourkey;EndpointSuffix=core.windows.net"
-AZURE_STORAGE_CONTAINER_NAME="bibles"
+AZURE_CONTAINER_NAME="bible-translations"
 ```
 
 ### 4. Import Bible Translations

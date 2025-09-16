@@ -1,11 +1,33 @@
 {
-  "healthchecks": {
-    "web": [
-      {
-        "type": "startup",
-        "path": "/",
-        "content": "verses and passages"
-      }
-    ]
-  }
+  "name": "Bible API (Python)",
+  "description": "A JSON API for Bible verses and passages",
+  "repository": "https://github.com/andreidemit/bible_api",
+  "keywords": ["bible", "api", "json", "verses", "python", "fastapi", "azure"],
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "env": {
+    "AZURE_STORAGE_CONNECTION_STRING": {
+      "description": "Azure Blob Storage connection string"
+    },
+    "AZURE_STORAGE_ACCOUNT_NAME": {
+      "description": "Azure Storage account name"
+    },
+    "AZURE_STORAGE_ACCOUNT_KEY": {
+      "description": "Azure Storage account key"
+    },
+    "AZURE_CONTAINER_NAME": {
+      "description": "Azure Storage container name",
+      "value": "bible-translations"
+    }
+  },
+  "healthchecks": [
+    {
+      "type": "web",
+      "path": "/",
+      "wait_time": 30
+    }
+  ]
 }
