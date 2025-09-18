@@ -610,19 +610,37 @@ class AzureXMLBibleService:
         
         try:
             root = ET.fromstring(xml_content)
-            books = []
-            
+            books: List[Dict[str, str]] = []
+
+            # Strategy 1: USFX / simple format <book id="GEN" name="Genesis">...
             for book_elem in root.findall('.//book'):
                 book_id = book_elem.get('id', '')
                 book_name = book_elem.get('name', book_id)
-                
                 if book_id and book_name:
-                    books.append({
-                        'id': book_id,
-                        'name': book_name
-                    })
-            
-            return books
-            
+                    books.append({'id': book_id, 'name': book_name})
+
+            # Strategy 2: OSIS format <div type="book" osisID="Gen"> or <div type="book" osisID="Gen.Gen.1">
+            if not books:
+                for div in root.findall(".//div"):
+                    if div.get('type') == 'book':
+                        osis_id = div.get('osisID') or ''
+                        if osis_id:
+                            # osisID may contain chapter segments; take first part
+                            base = osis_id.split('.')[0]
+                            # Normalize to 3-letter uppercase where possible
+                            norm = base.upper()[:3]
+                            books.append({'id': norm, 'name': base})
+
+            # Deduplicate while preserving order
+            seen = set()
+            deduped = []
+            for b in books:
+                if b['id'] not in seen:
+                    seen.add(b['id'])
+                    deduped.append(b)
+
+            if not deduped:
+                print(f"[AzureXMLBibleService] No books extracted for translation {translation_id}. XML may use unsupported structure.")
+            return deduped
         except ET.ParseError:
             return []

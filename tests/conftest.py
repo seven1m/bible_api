@@ -117,10 +117,15 @@ def fake_service() -> FakeAzureXMLBibleService:
     return FakeAzureXMLBibleService()
 
 @pytest.fixture(autouse=True)
-def override_dependencies(fake_service: FakeAzureXMLBibleService):
+def override_dependencies(request, fake_service: FakeAzureXMLBibleService):
     """Override DI points before each test.
     Sets both providers.get_xml_service and main.azure_service.
     """
+    # If test requests real Azure (marked with @pytest.mark.azure), do not override
+    if request.node.get_closest_marker('azure'):
+        # For azure tests we skip overriding but must still yield to satisfy fixture protocol
+        yield
+        return
     # Patch dependency override for router-based Depends(get_xml_service)
     from app import services as services_pkg  # type: ignore
     from app.services import providers as providers_module  # ensure module loaded
@@ -134,10 +139,11 @@ def override_dependencies(fake_service: FakeAzureXMLBibleService):
     # Set global azure_service used in main helpers & routes
     main_module.azure_service = fake_service
 
-    yield
-
-    # Cleanup
-    main_module.app.dependency_overrides.pop(real_get_xml_service, None)
+    try:
+        yield
+    finally:
+        # Cleanup
+        main_module.app.dependency_overrides.pop(real_get_xml_service, None)
 
 @pytest.fixture()
 def client() -> TestClient:

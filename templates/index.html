@@ -45,19 +45,20 @@
       <div class="grid two" aria-label="API styles">
         <section class="panel" aria-labelledby="user-input-api">
           <h2 id="user-input-api">User Input API</h2>
-          <p>Accepts natural-style references. Pattern:</p>
+          <p>Accepts natural-style references. Pattern (book + chapter:verse). You may use a space or <code>+</code> between book and chapter (space will be URL encoded):</p>
           <pre><code>{{ host }}/BOOK+CHAPTER:VERSE</code></pre>
           <table aria-label="Free-form examples">
             <thead><tr><th>Description</th><th>Link</th></tr></thead>
             <tbody>
-              <tr><td>Single verse</td><td><a href="/john 3:16">john 3:16</a></td></tr>
-              <tr><td>Abbreviated book</td><td><a href="/jn 3:16">jn 3:16</a></td></tr>
-              <tr><td>Multiple ranges</td><td><a href="/matt 25:31-33,46">matt 25:31-33,46</a></td></tr>
+              <tr><td>Single verse</td><td><a href="/john+3:16">john+3:16</a></td></tr>
+              <tr><td>Abbreviated book</td><td><a href="/jn+3:16">jn+3:16</a></td></tr>
+              <tr><td>Multiple ranges (same chapter)</td><td><a href="/matt+25:31-33,46">matt+25:31-33,46</a></td></tr>
+              <tr><td>Show verse numbers</td><td><a href="/john+3:16?verse_numbers=true">john+3:16?verse_numbers=true</a></td></tr>
             </tbody>
           </table>
-          <p>Specify a translation via <code>?translation=kjv</code>. Example: <a href="/john 3:16?translation=kjv">/john 3:16?translation=kjv</a></p>
+          <p>Specify a translation via <code>?translation=&lt;id&gt;</code>. Example (default "web"): <a href="/john+3:16?translation=web">/john+3:16?translation=web</a></p>
           <h3>Single-Chapter Books</h3>
-          <p>Books like Jude and Obadiah match verse 1 when you request <code>jude 1</code>. Provide <code>?single_chapter_book_matching=indifferent</code> to force whole-chapter matching.</p>
+          <p>Books like Jude and Obadiah match verse 1 when you request <code>jude 1</code>. A future parameter <code>?single_chapter_book_matching=indifferent</code> is reserved to force whole-chapter matching (currently no effect).</p>
         </section>
         <section class="panel" aria-labelledby="param-api">
           <h2 id="param-api">Structured API</h2>
@@ -73,7 +74,7 @@
             </tbody>
           </table>
           <h3>Random Verse</h3>
-            <p>Use <code>/data/&lt;translation&gt;/random</code> optionally followed by <code>/OT</code>, <code>/NT</code>, or a comma list (e.g. <code>/MAT,MRK,LUK,JHN</code>).</p>
+            <p>Use <code>/data/&lt;translation&gt;/random</code> optionally followed by <code>/OT</code>, <code>/NT</code>, a single book id, or a comma list (e.g. <code>/MAT,MRK,LUK,JHN</code>).</p>
             <table aria-label="Random examples">
               <thead><tr><th>Description</th><th>Link</th></tr></thead>
               <tbody>
