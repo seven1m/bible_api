@@ -1,6 +1,10 @@
-The MIT License (MIT)
+MIT License
 
+Original work (Ruby implementation):
 Copyright (c) 2014 Tim Morgan
+
+Ported and adapted to Python (this repository):
+Copyright (c) 2025 Andrei Demit
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +23,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+// Notes:
+// The above applies to the application source code. Bible translation text
+// files accessed at runtime are public domain according to the maintainer.
+// If additional non–public-domain translations are added in the future,
+// their licenses must be documented separately (e.g., in NOTICE or DATA_LICENSES.md).

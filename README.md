@@ -1,6 +1,6 @@
-# bible\_api
+# Bible API (Python Port)
 
-This is a Python web app that serves a JSON API for public domain and open bible translations.
+This repository is a Python (FastAPI) port and adaptation of the original Ruby-based Bible API project. It serves a JSON API for public domain Bible translations. Data is read directly from XML files stored in Azure Blob Storage (no relational database required).
 
 ## Using It
 
@@ -39,50 +39,44 @@ verse = response.json()
 print(json.dumps(verse, indent=2))
 ```
 
-## Hosting it Yourself
+## Running Locally
 
-If you want to host this Python application yourself, you'll need a Linux server with Python 3.12+, Redis, and MySQL (or MariaDB) installed. Follow the steps below:
+### Prerequisites
+* Python 3.12+
+* (Optional) Docker / Docker Compose
+* An Azure Blob Storage account containing supported public domain translation XML files.
 
-1. Clone the repo:
+### Environment Variables (Core)
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `AZURE_STORAGE_CONNECTION_STRING` | Connection string to the storage account | (required) |
+| `AZURE_CONTAINER_NAME` | Blob container with translation XML files | `bible-translations` |
+| `PORT` | HTTP port | `8000` |
 
-   ```
-   git clone https://github.com/andreidemit/bible_api
-   cd bible_api
-   git submodule update --init
-   ```
+Create a `.env` file:
+```
+AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=...<your-connection-string>...
+AZURE_CONTAINER_NAME=bible-translations
+PORT=8000
+```
 
-2. Install the dependencies:
+### Run (Plain Python)
+```
+pip install -r requirements.txt
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
 
-   ```
-   pip install -r requirements.txt
-   ```
+### Run with Docker Compose (Dev Hot Reload)
+```
+docker compose up dev --build
+```
 
-3. Create the database and import the translations:
+### Production-like Container
+```
+docker compose up api --build -d
+```
 
-   ```
-   mysql -uroot -e "create database bible_api; grant all on bible_api.* to user@localhost identified by 'password';"
-   export DATABASE_URL="mysql://user:password@localhost/bible_api"
-   export REDIS_URL="redis://localhost:6379"
-   python import_bible.py
-   ```
-
-4. Run the application:
-
-   **For development:**
-   ```
-   python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
-   ```
-
-   **For production:**
-   ```
-   python -m uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
-   ```
-
-   Or use gunicorn for production:
-   ```
-   pip install gunicorn
-   gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker
-   ```
+Visit `http://localhost:8000` then `http://localhost:8000/docs` for interactive API documentation.
 
 ## API Documentation
 
@@ -103,12 +97,30 @@ The Python version includes automatic API documentation:
 - ✅ Web interface with API documentation
 - ✅ Automatic API documentation (/docs, /redoc)
 
-## Environment Variables
+## Architecture Changes vs Original Ruby Version
 
-- `DATABASE_URL`: MySQL database connection string
-- `REDIS_URL`: Redis connection string for rate limiting
-- `PORT`: Port to run the server on (default: 8000)
+| Aspect | Original (Ruby) | Python Port |
+|--------|-----------------|-------------|
+| Language | Ruby (Sinatra) | Python (FastAPI) |
+| Storage | SQL + import pipeline | Direct Azure Blob XML parsing (cached in memory) |
+| Rate limiting | Redis-based | (Not implemented yet in this port) |
+| Docs | Manual | Auto (Swagger/OpenAPI) |
+| Random verses | DB query | In-memory random selection from parsed verses |
 
-## Copyright
+If rate limiting or additional caching are needed later, a lightweight Redis integration or an API gateway (e.g. Azure API Management) can be added.
 
-Copyright [Tim Morgan](https://timmorgan.org). Licensed under The MIT License (MIT). See LICENSE for more info.
+## Licensing
+
+Source Code:
+- MIT License. See `LICENSE`.
+- Original Ruby implementation © 2014 Tim Morgan (retained per MIT requirements).
+- Python port and adaptations © 2025 Andrei Demit.
+
+Bible Translation Data:
+- All translations used with this project (in Blob Storage) are public domain.
+- If a future non–public-domain translation is added, it must be listed in `NOTICE` (and possibly a `DATA_LICENSES.md`).
+
+See `NOTICE` for a concise attribution summary.
+
+---
+Contributions and improvements are welcome. Open issues or pull requests for feature requests, bug fixes, or new public domain translations.

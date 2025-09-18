@@ -1,0 +1,20 @@
+Bible API - NOTICE
+
+Original Ruby project (structure and concept):
+  Copyright (c) 2014 Tim Morgan
+
+Python port, adaptation, and ongoing maintenance:
+  Copyright (c) 2025 Andrei Demit
+
+License: MIT (see LICENSE)
+
+Data / Translations:
+  All Bible translation XML files accessed by this application (as of this version) are public domain.
+  If future translations with different licenses are introduced, they must be clearly identified
+  with their respective copyright and licensing terms in this NOTICE file or a dedicated DATA_LICENSES.md.
+
+Attribution Guidelines:
+  - Retain original author attribution when redistributing the source.
+  - Keep this NOTICE and LICENSE files intact.
+
+No warranty is provided. See LICENSE for full disclaimer.
