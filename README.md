@@ -78,6 +78,32 @@ docker compose up api --build -d
 
 Visit `http://localhost:8000` then `http://localhost:8000/docs` for interactive API documentation.
 
+## Testing
+
+An initial pytest-based test suite is being introduced.
+
+Install development dependencies (includes application + test packages):
+
+```
+pip install -r requirements-dev.txt
+```
+
+Run the tests:
+
+```
+pytest -q
+```
+
+Generate a coverage report:
+
+```
+pytest --cov=app --cov=main --cov-report=term-missing
+```
+
+The test suite uses a lightweight in-memory fake service instead of connecting to Azure. For integration tests against a real storage account, set the usual environment variables and (optionally) mark such tests with `-m azure` once those are added.
+
+Existing legacy scripts (`test_conversion.py`, `test_azure_endpoints.py`) will be migrated or deprecated in favor of structured pytest modules.
+
 ## API Documentation
 
 The Python version includes automatic API documentation:
@@ -96,6 +122,20 @@ The Python version includes automatic API documentation:
 - ✅ Random verse API
 - ✅ Web interface with API documentation
 - ✅ Automatic API documentation (/docs, /redoc)
+
+## Test Coverage & Next Steps
+
+Current pytest suite (see `tests/`):
+- Unit: reference parsing, response rendering, translation selection fallback.
+- API: `/v1/data` family, random verse endpoints, chapter & verse retrieval, dynamic reference endpoint, HTML root.
+- Deterministic fake service ensures tests run without Azure credentials.
+
+Planned / potential additions:
+- Integration tests hitting a real Azure Blob container (guarded by marker `azure` & env vars).
+- Stress/performance sampling for large XML translations.
+- Additional parsing robustness tests for more complex reference syntaxes.
+
+Suggested coverage target: 80%+ for helper/service modules (excluding Azure SDK branches). Run `pytest --cov=app --cov=main --cov-report=term-missing` for a line summary.
 
 ## Architecture Changes vs Original Ruby Version
 

@@ -107,6 +107,10 @@ def get_random_verse(translation: Dict[str, Any], books: Optional[List[str]] = N
     """Get a random verse using Azure service"""
     if not azure_service:
         return None
+    try:
+        return azure_service.get_random_verse(translation['identifier'], books or PROTESTANT_BOOKS)
+    except Exception:
+        return None
     
 def parse_bible_reference(ref_string: str) -> Optional[List[tuple]]:
     """Simple Bible reference parser (simplified version)"""
@@ -135,10 +139,17 @@ def parse_bible_reference(ref_string: str) -> Optional[List[tuple]]:
     }
     
     book_name = match.group(1).lower().strip()
-    book_id = book_map.get(book_name, book_name.upper()[:3])
+    mapped = book_map.get(book_name)
+    book_id = mapped if mapped else book_name.upper()[:3]
     chapter = int(match.group(2))
     verse_start = int(match.group(3))
     verse_end = int(match.group(4)) if match.group(4) else verse_start
+
+    # Reject unknown book names that were not in our map AND whose derived id is not a known canonical code
+    # This prevents parsing arbitrary strings like "1 Unknown 5:1" (which would yield '1 U').
+    # Known codes come from PROTESTANT_BOOKS.
+    if not mapped and book_id not in PROTESTANT_BOOKS:
+        return None
     
     # Create reference dictionaries
     ref_from = {'book': book_id, 'chapter': chapter, 'verse': verse_start}
