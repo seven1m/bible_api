@@ -62,14 +62,14 @@
         <section class="panel" aria-labelledby="param-api">
           <h2 id="param-api">Structured API</h2>
           <p>Deterministic endpoints keyed by translation, book, and chapter.</p>
-          <pre><code>/data/{TRANSLATION_ID}/{BOOK_ID}/{CHAPTER}</code></pre>
+          <pre><code>{{ api_base }}/data/{TRANSLATION_ID}/{BOOK_ID}/{CHAPTER}</code></pre>
           <table aria-label="Structured examples">
             <thead><tr><th>Description</th><th>Link</th></tr></thead>
             <tbody>
-              <tr><td>Translations</td><td><a href="/data">/data</a></td></tr>
-              <tr><td>Books in default translation</td><td><a href="/data/web">/data/web</a></td></tr>
-              <tr><td>Chapters in John</td><td><a href="/data/web/JHN">/data/web/JHN</a></td></tr>
-              <tr><td>Verses in John 3</td><td><a href="/data/web/JHN/3">/data/web/JHN/3</a></td></tr>
+              <tr><td>Translations</td><td><a href="{{ api_base }}/data">{{ api_base }}/data</a></td></tr>
+              <tr><td>Books in default translation</td><td><a href="{{ api_base }}/data/web">{{ api_base }}/data/web</a></td></tr>
+              <tr><td>Chapters in John</td><td><a href="{{ api_base }}/data/web/JHN">{{ api_base }}/data/web/JHN</a></td></tr>
+              <tr><td>Verses in John 3</td><td><a href="{{ api_base }}/data/web/JHN/3">{{ api_base }}/data/web/JHN/3</a></td></tr>
             </tbody>
           </table>
           <h3>Random Verse</h3>
@@ -77,11 +77,11 @@
             <table aria-label="Random examples">
               <thead><tr><th>Description</th><th>Link</th></tr></thead>
               <tbody>
-                <tr><td>Any book</td><td><a href="/data/web/random">/data/web/random</a></td></tr>
-                <tr><td>Specific book (John)</td><td><a href="/data/web/random/JHN">/data/web/random/JHN</a></td></tr>
-                <tr><td>Multiple books</td><td><a href="/data/web/random/MAT,MRK,LUK,JHN">/data/web/random/MAT,MRK,LUK,JHN</a></td></tr>
-                <tr><td>Old Testament</td><td><a href="/data/web/random/OT">/data/web/random/OT</a></td></tr>
-                <tr><td>New Testament</td><td><a href="/data/web/random/NT">/data/web/random/NT</a></td></tr>
+                <tr><td>Any book</td><td><a href="{{ api_base }}/data/web/random">{{ api_base }}/data/web/random</a></td></tr>
+                <tr><td>Specific book (John)</td><td><a href="{{ api_base }}/data/web/random/JHN">{{ api_base }}/data/web/random/JHN</a></td></tr>
+                <tr><td>Multiple books</td><td><a href="{{ api_base }}/data/web/random/MAT,MRK,LUK,JHN">{{ api_base }}/data/web/random/MAT,MRK,LUK,JHN</a></td></tr>
+                <tr><td>Old Testament</td><td><a href="{{ api_base }}/data/web/random/OT">{{ api_base }}/data/web/random/OT</a></td></tr>
+                <tr><td>New Testament</td><td><a href="{{ api_base }}/data/web/random/NT">{{ api_base }}/data/web/random/NT</a></td></tr>
               </tbody>
             </table>
         </section>

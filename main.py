@@ -5,14 +5,16 @@ import re
 from typing import Optional, Dict, List, Any
 from urllib.parse import unquote
 
-from fastapi import FastAPI, Request, HTTPException, Query
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse, Response, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from app.services.azure_xml_service import AzureXMLBibleService
-from app.schemas.bible import Translation as TranslationSchema, Verse as VerseSchema, VerseResponse as VerseResponseSchema
+from app.schemas.bible import Verse as VerseSchema, VerseResponse as VerseResponseSchema
+from app.routers.bible import router as bible_router
+from app.core.constants import PROTESTANT_BOOKS, OT_BOOKS, NT_BOOKS
 
 # Load environment variables
 load_dotenv()
@@ -24,16 +26,7 @@ app = FastAPI(title="Bible API", description="A JSON API for Bible verses and pa
 if os.path.isdir("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Initialize Azure Bible Service (replaces database)
-try:
-    print("Initializing Azure Bible Service...")
-    azure_service = AzureXMLBibleService()
-    print(f"✓ Azure service initialized successfully")
-except Exception as e:
-    print(f"✗ Failed to initialize Azure Bible Service: {e}")
-    import traceback
-    traceback.print_exc()
-    azure_service = None
+azure_service = None  # Will lazy init on first need
 
 # CORS middleware
 app.add_middleware(
@@ -195,18 +188,19 @@ def render_verse_response(verses: List[Dict], ref: str, translation: Dict[str, A
         'text': verse.text
     }
 
-# Protestant books list (simplified)
-PROTESTANT_BOOKS = [
-    'GEN', 'EXO', 'LEV', 'NUM', 'DEU', 'JOS', 'JDG', 'RUT', '1SA', '2SA', '1KI', '2KI',
-    '1CH', '2CH', 'EZR', 'NEH', 'EST', 'JOB', 'PSA', 'PRO', 'ECC', 'SNG', 'ISA', 'JER',
-    'LAM', 'EZK', 'DAN', 'HOS', 'JOL', 'AMO', 'OBA', 'JON', 'MIC', 'NAM', 'HAB', 'ZEP',
-    'HAG', 'ZEC', 'MAL', 'MAT', 'MRK', 'LUK', 'JHN', 'ACT', 'ROM', '1CO', '2CO', 'GAL',
-    'EPH', 'PHP', 'COL', '1TH', '2TH', '1TI', '2TI', 'TIT', 'PHM', 'HEB', 'JAS', '1PE',
-    '2PE', '1JN', '2JN', '3JN', 'JUD', 'REV'
-]
-
-OT_BOOKS = PROTESTANT_BOOKS[:PROTESTANT_BOOKS.index('MAT')]
-NT_BOOKS = PROTESTANT_BOOKS[PROTESTANT_BOOKS.index('MAT'):]
+def _ensure_service():
+    global azure_service
+    if azure_service is None:
+        try:
+            print("Lazy-initializing Azure Bible Service...")
+            azure_service = AzureXMLBibleService()
+            print("✓ Azure service ready")
+        except Exception as e:
+            print(f"✗ Failed to initialize Azure Bible Service: {e}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail="Azure Bible service not available")
+    return azure_service
 
 # Routes
 @app.get("/", response_class=HTMLResponse)
@@ -214,8 +208,7 @@ async def root(request: Request, random: Optional[str] = None, translation: Opti
     """Main page - returns API documentation or random verse"""
     
     # Check if Azure service is available
-    if not azure_service:
-        raise HTTPException(status_code=500, detail="Azure Bible service not available")
+    service = _ensure_service()
     
     if random is not None:
         # Legacy random API support
@@ -229,169 +222,26 @@ async def root(request: Request, random: Optional[str] = None, translation: Opti
         return JSONResponse(content=response)
     else:
         # Return HTML documentation page
-        translations = azure_service.list_translations()
+        translations = service.list_translations()
         # Build example book mapping for each translation (first available book or fallback to 'John')
         example_books = {}
         for t in translations:
             try:
-                blist = azure_service.get_books_for_translation(t['identifier'])
+                blist = service.get_books_for_translation(t['identifier'])
                 example_books[t['identifier']] = (blist[0]['name'] if blist else 'John')
             except Exception:
                 example_books[t['identifier']] = 'John'
 
+        api_base = f"{str(request.base_url).rstrip('/')}/v1"
         return templates.TemplateResponse("index.html", {
             "request": request,
             "translations": translations,
             "example_books": example_books,
-            "host": str(request.base_url).rstrip('/')
+            "host": str(request.base_url).rstrip('/'),
+            "api_base": api_base
         })
 
-@app.get("/data")
-async def list_translations(request: Request):
-    """List all available translations"""
-    if not azure_service:
-        raise HTTPException(status_code=500, detail="Azure Bible service not available")
-    
-    host = str(request.base_url).rstrip('/')
-    print("DEBUG: Getting translations from Azure service")
-    translations = azure_service.list_translations()
-    print(f"DEBUG: Found {len(translations)} translations")
-    
-    result = {
-        "translations": [
-            {**translation_as_dict(t), "url": f"{host}/data/{t['identifier']}"}
-            for t in translations
-        ]
-    }
-    return result
-
-@app.get("/data/{translation_id}")
-async def get_translation_books(request: Request, translation_id: str):
-    """Get books in a translation"""
-    if not azure_service:
-        raise HTTPException(status_code=500, detail="Azure Bible service not available")
-    
-    host = str(request.base_url).rstrip('/')
-    translation = get_translation(translation_id)
-    
-    # Get available books for this translation
-    all_books = azure_service.get_books_for_translation(translation_id)
-    
-    # Filter to Protestant books only
-    books = []
-    for book in all_books:
-        book_id = book['id'].upper()
-        if book_id in PROTESTANT_BOOKS:
-            books.append({
-                "id": book_id,
-                "name": book['name'],
-                "url": f"{host}/data/{translation['identifier']}/{book_id}"
-            })
-    
-    return {
-        "translation": translation_as_dict(translation),
-        "books": books
-    }
-
-@app.get("/data/{translation_id}/random")
-async def get_random_verse_endpoint(request: Request, translation_id: str):
-    """Get a random verse from a translation"""
-    if not azure_service:
-        raise HTTPException(status_code=500, detail="Azure Bible service not available")
-    
-    translation = get_translation(translation_id)
-    verse = get_random_verse(translation, PROTESTANT_BOOKS)
-    
-    if not verse:
-        raise HTTPException(status_code=404, detail={"error": "error getting verse"})
-    
-    return {
-        "translation": translation_as_dict(translation),
-        "random_verse": verse
-    }
-
-@app.get("/data/{translation_id}/random/{book_id}")
-async def get_random_verse_by_book(request: Request, translation_id: str, book_id: str):
-    """Get a random verse from specific book(s)"""
-    if not azure_service:
-        raise HTTPException(status_code=500, detail="Azure Bible service not available")
-    
-    translation = get_translation(translation_id)
-    book_id = book_id.upper()
-    
-    if book_id == 'OT':
-        books = OT_BOOKS
-    elif book_id == 'NT':
-        books = NT_BOOKS
-    else:
-        books = book_id.split(',')
-        # For Azure service, we'll trust that the books exist and let the service handle it
-    
-    verse = get_random_verse(translation, books)
-    if not verse:
-        raise HTTPException(status_code=404, detail={"error": "error getting verse"})
-    
-    return {
-        "translation": translation_as_dict(translation),
-        "random_verse": verse
-    }
-
-@app.get("/data/{translation_id}/{book_id}")
-async def get_book_chapters(request: Request, translation_id: str, book_id: str):
-    """Get chapters in a book"""
-    if not azure_service:
-        raise HTTPException(status_code=500, detail="Azure Bible service not available")
-    
-    host = str(request.base_url).rstrip('/')
-    translation = get_translation(translation_id)
-    
-    # Get available chapters for this book using the new method
-    chapters_info = azure_service.get_chapters_for_book(translation_id, book_id)
-    
-    if not chapters_info:
-        raise HTTPException(status_code=404, detail={"error": "book not found"})
-    
-    chapter_list = []
-    for chapter_info in chapters_info:
-        chapter_list.append({
-            "book_id": chapter_info['book_id'],
-            "book": chapter_info['book_name'],
-            "chapter": chapter_info['chapter'],
-            "url": f"{host}/data/{translation['identifier']}/{chapter_info['book_id']}/{chapter_info['chapter']}"
-        })
-    
-    return {
-        "translation": translation_as_dict(translation),
-        "chapters": chapter_list
-    }
-
-@app.get("/data/{translation_id}/{book_id}/{chapter}")
-async def get_chapter_verses(request: Request, translation_id: str, book_id: str, chapter: int):
-    """Get verses in a chapter"""
-    if not azure_service:
-        raise HTTPException(status_code=500, detail="Azure Bible service not available")
-    
-    translation = get_translation(translation_id)
-    
-    verses = azure_service.get_verses_by_reference(translation_id, book_id, chapter)
-    
-    if not verses:
-        raise HTTPException(status_code=404, detail={"error": "book/chapter not found"})
-    
-    verse_list = []
-    for verse in verses:
-        verse_list.append({
-            "book_id": verse['book_id'],
-            "book": verse['book'],
-            "chapter": verse['chapter'],
-            "verse": verse['verse'],
-            "text": verse['text']
-        })
-    
-    return {
-        "translation": translation_as_dict(translation),
-        "verses": verse_list
-    }
+app.include_router(bible_router)
 
 @app.options("/{ref:path}")
 async def options_handler():
