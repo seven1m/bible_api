@@ -227,17 +227,19 @@ async def root(request: Request, random: Optional[str] = None, translation: Opti
     else:
         # Return HTML documentation page
         translations = azure_service.list_translations()
-        # Get example books from first translation
-        books = {}
-        if translations:
-            first_trans = translations[0]
-            books_list = azure_service.get_books_for_translation(first_trans['identifier'])
-            books = {first_trans['identifier']: books_list[0]['name'] if books_list else 'John'}
-        
+        # Build example book mapping for each translation (first available book or fallback to 'John')
+        example_books = {}
+        for t in translations:
+            try:
+                blist = azure_service.get_books_for_translation(t['identifier'])
+                example_books[t['identifier']] = (blist[0]['name'] if blist else 'John')
+            except Exception:
+                example_books[t['identifier']] = 'John'
+
         return templates.TemplateResponse("index.html", {
             "request": request,
             "translations": translations,
-            "books": books,
+            "example_books": example_books,
             "host": str(request.base_url).rstrip('/')
         })
 
