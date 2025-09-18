@@ -20,7 +20,7 @@ def test_imports():
         return False
     
     try:
-        from azure_xml_service import AzureXMLBibleService
+        from app.services.azure_xml_service import AzureXMLBibleService
         print("✓ Azure XML service imports successfully")
     except Exception as e:
         print(f"✗ Failed to import Azure XML service: {e}")

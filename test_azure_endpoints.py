@@ -4,7 +4,7 @@ Simple test script to check Azure service functionality
 """
 
 import asyncio
-from azure_xml_service import AzureXMLBibleService
+from app.services.azure_xml_service import AzureXMLBibleService
 
 async def test_azure_service():
     try:

@@ -11,7 +11,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from azure_xml_service import AzureXMLBibleService
+from app.services.azure_xml_service import AzureXMLBibleService
+from app.schemas.bible import Translation as TranslationSchema, Verse as VerseSchema, VerseResponse as VerseResponseSchema
 
 # Load environment variables
 load_dotenv()
@@ -153,30 +154,32 @@ def parse_bible_reference(ref_string: str) -> Optional[List[tuple]]:
     return [(ref_from, ref_to)]
 
 def render_verse_response(verses: List[Dict], ref: str, translation: Dict[str, Any], verse_numbers: bool = False) -> Dict[str, Any]:
-    """Render verse response in the expected format"""
-    formatted_verses = []
+    """Render verse response in the expected format using Pydantic schemas (still returns dict for backward compatibility)."""
+    verse_models: List[VerseSchema] = []
     for v in verses:
-        formatted_verses.append({
-            "book_id": v['book_id'],
-            "book_name": v['book'],
-            "chapter": v['chapter'],
-            "verse": v['verse'],
-            "text": v['text']
-        })
-    
+        verse_models.append(VerseSchema(
+            book_id=v['book_id'],
+            book=v['book'],
+            chapter=v['chapter'],
+            verse=v['verse'],
+            text=v['text']
+        ))
+
     if verse_numbers:
-        verse_text = ''.join(f"({v['verse']}) {v['text']}" for v in formatted_verses)
+        verse_text = ''.join(f"({vm.verse}) {vm.text}" for vm in verse_models)
     else:
-        verse_text = ''.join(v['text'] for v in formatted_verses)
-    
-    return {
-        "reference": ref,
-        "verses": formatted_verses,
-        "text": verse_text,
-        "translation_id": translation['identifier'],
-        "translation_name": translation['name'],
-        "translation_note": translation['license']
-    }
+        verse_text = ''.join(vm.text for vm in verse_models)
+
+    resp = VerseResponseSchema(
+        reference=ref,
+        verses=verse_models,
+        text=verse_text,
+        translation_id=translation['identifier'],
+        translation_name=translation['name'],
+        translation_note=translation['license']
+    )
+    # Return dict so existing clients unaffected (FastAPI can serialize model directly later if desired)
+    return resp.model_dump()
     
     # Use ORDER BY RAND() equivalent
     verse = query.order_by(func.rand()).first()
