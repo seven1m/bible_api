@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pytest_cache
+.mypy_cache
+.pytype
+.coverage*
+htmlcov/
+
+# Virtual environments
+venv/
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Logs & temp
+*.log
+*.tmp
+*.swp
+
+# Tests / artifacts
+.tox
+build/
+dist/
+site/
+reports/
+
+# Docker
+Dockerfile.*

@@ -1,34 +1,45 @@
-# Dockerfile for Bible API Python Version
-FROM python:3.12-slim
+#############################
+# Bible API - Production Image
+# Build: docker build -t bible-api:latest .
+#############################
+FROM python:3.12-slim AS runtime
 
-# Set working directory
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    UVICORN_WORKERS=1 \
+    PORT=8000
+
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install minimal system dependencies (curl for health + diagnostics)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better Docker layer caching
-COPY requirements.txt .
+# Upgrade pip explicitly (security, speed)
+RUN pip install --upgrade pip
 
-# Install Python dependencies
+# Copy requirements first for caching
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application source
 COPY . .
 
-# Create non-root user for security
-RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app
-USER app
+# Create non-root user (no shell needed in container runtime)
+RUN useradd --system --create-home --uid 1001 appuser \
+    && chown -R appuser:appuser /app
+USER appuser
 
-# Expose port
 EXPOSE 8000
 
-# Health check
+# Health check (basic). For more robust readiness, add a /healthz route.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/ || exit 1
+    CMD curl -fsS http://localhost:${PORT}/healthz || curl -fsS http://localhost:${PORT}/ || exit 1
 
-# Default command
+# Default command (single worker). Scale via orchestrator, not in-process.
 CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# (Optional) Multi-stage optimization suggestion:
+# Use a builder stage to precompile wheels if heavy dependencies are added later.
