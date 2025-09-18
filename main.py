@@ -6,7 +6,8 @@ from typing import Optional, Dict, List, Any
 from urllib.parse import unquote
 
 from fastapi import FastAPI, Request, HTTPException, Query
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, Response, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -17,6 +18,10 @@ load_dotenv()
 
 # Initialize FastAPI app
 app = FastAPI(title="Bible API", description="A JSON API for Bible verses and passages")
+
+# Mount static assets (favicon, future css/js)
+if os.path.isdir("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Initialize Azure Bible Service (replaces database)
 try:
@@ -39,6 +44,21 @@ app.add_middleware(
 
 # Templates
 templates = Jinja2Templates(directory="templates")
+
+# Favicon & health endpoints
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    """Return bible icon as favicon. Served from static directory if present."""
+    svg_path = os.path.join("static", "favicon.svg")
+    # Some browsers prefer an ICO mime; we return SVG with proper type (modern browsers support it)
+    if os.path.exists(svg_path):
+        return FileResponse(svg_path, media_type="image/svg+xml")
+    # Fallback: empty 204 so we stop 404 noise
+    return Response(status_code=204)
+
+@app.get("/healthz", include_in_schema=False)
+async def healthz():
+    return {"status": "ok"}
 
 # Helper functions
 def get_translation(identifier: Optional[str] = None) -> Dict[str, Any]:
