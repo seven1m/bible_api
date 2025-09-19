@@ -6,29 +6,74 @@ on:
   pull_request:
     branches: [ master, main ]
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
-  test:
+  build-test:
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      DOTNET_NOLOGO: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+          cache: true
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build (Release)
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test with coverage
+        run: |
+          dotnet test --configuration Release --no-build \
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=opencover \
+            /p:CoverletOutput=./TestResults/coverage/
+
+      - name: Upload coverage (OpenCover)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-opencover
+          path: '**/TestResults/coverage/coverage.opencover.xml'
+
+      - name: Upload test results trx
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/TestResults/*.trx'
+
+  docker-build:
+    # Optional docker build stage (only runs on pushes to main/master)
+    if: github.event_name == 'push'
+    needs: build-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Cache Docker layers
+        uses: actions/cache@v4
         with:
-          python-version: '3.12'
-      - name: Install dependencies
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+      - name: Build image
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
-      - name: Run tests with coverage + JUnit
-        run: |
-          mkdir -p reports
-          pytest --cov=app --cov=main --cov-report=term-missing --junitxml=reports/junit.xml --maxfail=1 -q
-      - name: Generate markdown test report
-        run: |
-          python tools/generate_test_report.py reports/junit.xml > reports/test-report.md
-      - name: Upload test artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-reports
-          path: reports/
+          docker build -t bibleapi:ci -f Dockerfile .
+      - name: List image
+        run: docker images bibleapi:ci
