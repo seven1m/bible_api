@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "dgSpecHash": "i5xZP5F2ButhRCj1idBK9mYJFDHS3gtv762HNmUwtevfq0Ph77xZL5Mx9N4mqcrFShgAwA/T3y4Sz44GDUd9hw==",
+  "success": true,
+  "projectFilePath": "/home/runner/work/bible_api/bible_api/BibleApi/BibleApi.csproj",
+  "expectedPackageFiles": [
+    "/home/runner/.nuget/packages/azure.core/1.47.3/azure.core.1.47.3.nupkg.sha512",
+    "/home/runner/.nuget/packages/azure.identity/1.16.0/azure.identity.1.16.0.nupkg.sha512",
+    "/home/runner/.nuget/packages/azure.storage.blobs/12.25.0/azure.storage.blobs.12.25.0.nupkg.sha512",
+    "/home/runner/.nuget/packages/azure.storage.common/12.24.0/azure.storage.common.12.24.0.nupkg.sha512",
+    "/home/runner/.nuget/packages/microsoft.aspnetcore.openapi/8.0.19/microsoft.aspnetcore.openapi.8.0.19.nupkg.sha512",
+    "/home/runner/.nuget/packages/microsoft.bcl.asyncinterfaces/8.0.0/microsoft.bcl.asyncinterfaces.8.0.0.nupkg.sha512",
+    "/home/runner/.nuget/packages/microsoft.extensions.apidescription.server/6.0.5/microsoft.extensions.apidescription.server.6.0.5.nupkg.sha512",
+    "/home/runner/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.2/microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
+    "/home/runner/.nuget/packages/microsoft.extensions.logging.abstractions/8.0.3/microsoft.extensions.logging.abstractions.8.0.3.nupkg.sha512",
+    "/home/runner/.nuget/packages/microsoft.identity.client/4.76.0/microsoft.identity.client.4.76.0.nupkg.sha512",
+    "/home/runner/.nuget/packages/microsoft.identity.client.extensions.msal/4.76.0/microsoft.identity.client.extensions.msal.4.76.0.nupkg.sha512",
+    "/home/runner/.nuget/packages/microsoft.identitymodel.abstractions/6.35.0/microsoft.identitymodel.abstractions.6.35.0.nupkg.sha512",
+    "/home/runner/.nuget/packages/microsoft.openapi/1.6.14/microsoft.openapi.1.6.14.nupkg.sha512",
+    "/home/runner/.nuget/packages/swashbuckle.aspnetcore/6.6.2/swashbuckle.aspnetcore.6.6.2.nupkg.sha512",
+    "/home/runner/.nuget/packages/swashbuckle.aspnetcore.swagger/6.6.2/swashbuckle.aspnetcore.swagger.6.6.2.nupkg.sha512",
+    "/home/runner/.nuget/packages/swashbuckle.aspnetcore.swaggergen/6.6.2/swashbuckle.aspnetcore.swaggergen.6.6.2.nupkg.sha512",
+    "/home/runner/.nuget/packages/swashbuckle.aspnetcore.swaggerui/6.6.2/swashbuckle.aspnetcore.swaggerui.6.6.2.nupkg.sha512",
+    "/home/runner/.nuget/packages/system.clientmodel/1.6.1/system.clientmodel.1.6.1.nupkg.sha512",
+    "/home/runner/.nuget/packages/system.diagnostics.diagnosticsource/6.0.1/system.diagnostics.diagnosticsource.6.0.1.nupkg.sha512",
+    "/home/runner/.nuget/packages/system.io.hashing/8.0.0/system.io.hashing.8.0.0.nupkg.sha512",
+    "/home/runner/.nuget/packages/system.memory.data/8.0.1/system.memory.data.8.0.1.nupkg.sha512",
+    "/home/runner/.nuget/packages/system.runtime.compilerservices.unsafe/6.0.0/system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",
+    "/home/runner/.nuget/packages/system.security.cryptography.protecteddata/4.5.0/system.security.cryptography.protecteddata.4.5.0.nupkg.sha512"
+  ],
+  "logs": []
+}
