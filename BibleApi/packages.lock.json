@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "net8.0": {
+    "net9.0": {
       "Azure.Identity": {
         "type": "Direct",
         "requested": "[1.16.0, )",
