@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BibleApi.Tests", "BibleApi.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BibleImporter", "BibleImporter\BibleImporter.csproj", "{4CBFE510-00BC-45FC-8672-E99A90C31182}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BibleImporter.Tests", "BibleImporter.Tests\BibleImporter.Tests.csproj", "{B51E31AF-0FB1-4F50-8D90-D3C0012A9038}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
