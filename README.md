@@ -4,6 +4,13 @@ This repository contains a C# .NET Core Web API implementation of a Bible verses
 
 **🎯 This is a complete conversion from the original Python FastAPI implementation to C# .NET Core, maintaining full API compatibility.**
 
+## Projects
+
+- **BibleApi**: Web API service for serving Bible data
+- **BibleImporter**: Console application for importing XML Bible data into Azure SQL Database
+- **BibleApi.Tests**: Unit tests for the API
+- **BibleImporter.Tests**: Unit tests for the importer
+
 ## Quick Start
 
 ### Using Docker

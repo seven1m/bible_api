@@ -1,0 +1,3 @@
+# Local configuration files (not in source control)
+config.json
+config.ini

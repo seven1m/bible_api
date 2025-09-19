@@ -1,0 +1,5 @@
+{
+  "AzureBlobConnectionString": "DefaultEndpointsProtocol=https;AccountName=your_account;AccountKey=your_key;EndpointSuffix=core.windows.net",
+  "BlobContainerName": "bible-translations",
+  "SqlConnectionString": "Server=your_server;Database=your_database;Trusted_Connection=true;TrustServerCertificate=true;"
+}
