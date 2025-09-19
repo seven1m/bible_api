@@ -1,37 +1,4 @@
-version: '3.8'
-
-# Bible API Compose Configuration
-# Usage:
-#   Development (hot reload): docker compose up dev
-#   Production-like (frozen image): docker compose up api
-
-services:
-  dev:
-    build: .
-    container_name: bible-api-dev
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    environment:
-      # Override defaults only when needed; .env supplies secrets.
-      UVICORN_WORKERS: 1
-      LOG_LEVEL: info
-    volumes:
-      - .:/app
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    restart: unless-stopped
-
-  api:
-    build: .
-    container_name: bible-api
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    environment:
-      UVICORN_WORKERS: 1
-      LOG_LEVEL: info
-    # No source mount -> uses image contents
-    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000
-    restart: unless-stopped
+# Deprecated docker-compose file from Python version intentionally left blank.
+# Use Dockerfile (ASP.NET Core) to build and run container.
+version: "3.8"
+services: {}

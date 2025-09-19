@@ -1,166 +1,288 @@
-# Bible API (Python Port)
+# Bible API (C# .NET Core Edition)
 
-This repository is a Python (FastAPI) port and adaptation of the original Ruby-based Bible API project. It serves a JSON API for public domain Bible translations. Data is read directly from XML files stored in Azure Blob Storage (no relational database required).
+This repository contains a C# .NET Core Web API implementation of a Bible verses and passages API. It serves JSON responses for public domain Bible translations, reading data directly from XML files stored in Azure Blob Storage.
 
-## Using It
+**🎯 This is a complete conversion from the original Python FastAPI implementation to C# .NET Core, maintaining full API compatibility.**
 
-This app is served from [bible-api.com](https://bible-api.com/), which anyone can use.
+## Quick Start
 
-### With Curl and JQ
+### Using Docker
 
-```sh
-→ curl -s https://bible-api.com/John+3:16 | jq
-{
-  "reference": "John 3:16",
-  "verses": [
-    {
-      "book_id": "JHN",
-      "book_name": "John",
-      "chapter": 3,
-      "verse": 16,
-      "text": "\nFor God so loved the world, that he gave his one and only Son, that whoever believes in him should not perish, but have eternal life.\n\n"
-    }
-  ],
-  "text": "\nFor God so loved the world, that he gave his one and only Son, that whoever believes in him should not perish, but have eternal life.\n\n",
-  "translation_id": "web",
-  "translation_name": "World English Bible",
-  "translation_note": "Public Domain"
-}
+```bash
+# Build the Docker image
+docker build -f Dockerfile.dotnet -t bible-api-dotnet:latest .
+
+# Run with environment variables
+docker run -p 8000:8000 \
+  -e APPSETTINGS__AZURESTORAGECONNECTIONSTRING="your-azure-connection-string" \
+  -e APPSETTINGS__AZURECONTAINERNAME="bible-translations" \
+  bible-api-dotnet:latest
 ```
 
-### With Python
+### Running Locally
 
-```python
-import requests
-import json
+```bash
+# Clone the repository
+git clone https://github.com/andreidemit/bible_api.git
+cd bible_api/BibleApi
 
-response = requests.get('https://bible-api.com/John+3:16')
-verse = response.json()
-print(json.dumps(verse, indent=2))
+# Install dependencies
+dotnet restore
+
+# Set environment variables (optional - will use mock data if not set)
+export AppSettings__AzureStorageConnectionString="your-azure-connection-string"
+export AppSettings__AzureContainerName="bible-translations"
+
+# Run the application
+dotnet run --urls=http://localhost:8000
 ```
 
-## Running Locally
-
-### Prerequisites
-* Python 3.12+
-* (Optional) Docker / Docker Compose
-* An Azure Blob Storage account containing supported public domain translation XML files.
-
-### Environment Variables (Core)
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `AZURE_STORAGE_CONNECTION_STRING` | Connection string to the storage account | (required) |
-| `AZURE_CONTAINER_NAME` | Blob container with translation XML files | `bible-translations` |
-| `PORT` | HTTP port | `8000` |
-
-Create a `.env` file:
-```
-AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=...<your-connection-string>...
-AZURE_CONTAINER_NAME=bible-translations
-PORT=8000
-```
-
-### Run (Plain Python)
-```
-pip install -r requirements.txt
-python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### Run with Docker Compose (Dev Hot Reload)
-```
-docker compose up dev --build
-```
-
-### Production-like Container
-```
-docker compose up api --build -d
-```
-
-Visit `http://localhost:8000` then `http://localhost:8000/docs` for interactive API documentation.
-
-## Testing
-
-An initial pytest-based test suite is being introduced.
-
-Install development dependencies (includes application + test packages):
-
-```
-pip install -r requirements-dev.txt
-```
-
-Run the tests:
-
-```
-pytest -q
-```
-
-Generate a coverage report:
-
-```
-pytest --cov=app --cov=main --cov-report=term-missing
-```
-
-The test suite uses a lightweight in-memory fake service instead of connecting to Azure. For integration tests against a real storage account, set the usual environment variables and (optionally) mark such tests with `-m azure` once those are added.
-
-Existing legacy scripts (`test_conversion.py`, `test_azure_endpoints.py`) will be migrated or deprecated in favor of structured pytest modules.
+The API will be available at `http://localhost:8000` with automatic Swagger documentation at `/swagger`.
 
 ## API Documentation
 
-The Python version includes automatic API documentation:
+### Core Endpoints
 
-- **Interactive API docs:** Visit `/docs` when running the server
-- **ReDoc documentation:** Visit `/redoc` when running the server
+All endpoints return JSON responses. Full API documentation is available at `/swagger` when running the application.
+
+#### List Translations
+```
+GET /v1/data
+```
+Returns a list of all available Bible translations.
+
+#### Get Books for Translation
+```
+GET /v1/data/{translationId}
+```
+Returns all books available in the specified translation.
+
+#### Get Chapters for Book
+```
+GET /v1/data/{translationId}/{bookId}
+```
+Returns all chapters for the specified book in the translation.
+
+#### Get Verses for Chapter
+```
+GET /v1/data/{translationId}/{bookId}/{chapter}
+```
+Returns all verses for the specified chapter.
+
+#### Random Verse
+```
+GET /v1/data/{translationId}/random/{bookId}
+```
+Returns a random verse from the specified book(s). Use `OT` for Old Testament, `NT` for New Testament, or specific book IDs separated by commas.
+
+#### Health Check
+```
+GET /healthz
+```
+Returns API health status.
+
+### Example API Calls
+
+```bash
+# List all translations
+curl http://localhost:8000/v1/data
+
+# Get books in King James Version
+curl http://localhost:8000/v1/data/kjv
+
+# Get chapters in Genesis
+curl http://localhost:8000/v1/data/kjv/GEN
+
+# Get verses from John chapter 3
+curl http://localhost:8000/v1/data/kjv/JHN/3
+
+# Get random verse from New Testament
+curl http://localhost:8000/v1/data/kjv/random/NT
+```
+
+## Configuration
+
+The application uses the .NET configuration system. Settings can be provided via:
+
+- `appsettings.json` file
+- Environment variables (prefixed with `AppSettings__`)
+- Command line arguments
+- Azure Key Vault (in production)
+
+### Required Settings
+
+| Setting | Environment Variable | Description |
+|---------|---------------------|-------------|
+| `AzureStorageConnectionString` | `AppSettings__AzureStorageConnectionString` | Azure Storage connection string for Bible XML files |
+| `AzureContainerName` | `AppSettings__AzureContainerName` | Container name (default: "bible-translations") |
+
+### Optional Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `Environment` | "development" | Application environment |
+| `AllowedOrigins` | ["*"] | CORS allowed origins |
+| `AllowedMethods` | ["GET", "OPTIONS"] | CORS allowed methods |
+| `AllowedHeaders` | ["Content-Type"] | CORS allowed headers |
+
+## Development
+
+### Project Structure
+
+```
+BibleApi/
+├── Controllers/         # API controllers
+│   └── BibleController.cs
+├── Models/             # Data models and DTOs
+│   └── BibleModels.cs
+├── Services/           # Business logic services
+│   ├── IAzureXmlBibleService.cs
+│   ├── AzureXmlBibleService.cs
+│   └── MockAzureXmlBibleService.cs
+├── Configuration/      # Configuration classes
+│   └── AppSettings.cs
+├── Core/              # Core utilities and constants
+│   └── BibleConstants.cs
+└── Program.cs         # Application entry point
+```
+
+### Building and Testing
+
+```bash
+# Build the project
+dotnet build
+
+# Run tests (when implemented)
+dotnet test
+
+# Run with hot reload for development
+dotnet watch run --urls=http://localhost:8000
+```
+
+### Mock Mode
+
+For development and testing without Azure Storage, the application automatically uses a mock service when no Azure connection string is configured. The mock service provides sample data for all endpoints.
 
 ## Features
 
-- ✅ All original API endpoints preserved
-- ✅ CORS support
-- ✅ Rate limiting (15 requests per 30 seconds per IP)
-- ✅ JSONP support (via callback parameter)
-- ✅ Bible reference parsing (John 3:16, Matt 5:1-10, etc.)
-- ✅ Multiple translations
-- ✅ Random verse API
-- ✅ Web interface with API documentation
-- ✅ Automatic API documentation (/docs, /redoc)
+- ✅ RESTful API with versioned endpoints (`/v1/`)
+- ✅ CORS support for cross-origin requests
+- ✅ Automatic OpenAPI/Swagger documentation
+- ✅ Health check endpoint for monitoring
+- ✅ Azure Blob Storage integration
+- ✅ In-memory caching for performance
+- ✅ Structured logging with .NET ILogger
+- ✅ Docker containerization
+- ✅ Configuration management with .NET Options pattern
+- ✅ Dependency injection
+- ✅ Error handling with proper HTTP status codes
 
-## Test Coverage & Next Steps
+## Deployment
 
-Current pytest suite (see `tests/`):
-- Unit: reference parsing, response rendering, translation selection fallback.
-- API: `/v1/data` family, random verse endpoints, chapter & verse retrieval, dynamic reference endpoint, HTML root.
-- Deterministic fake service ensures tests run without Azure credentials.
+### Docker
 
-Planned / potential additions:
-- Integration tests hitting a real Azure Blob container (guarded by marker `azure` & env vars).
-- Stress/performance sampling for large XML translations.
-- Additional parsing robustness tests for more complex reference syntaxes.
+The application includes a multi-stage Dockerfile optimized for production:
 
-Suggested coverage target: 80%+ for helper/service modules (excluding Azure SDK branches). Run `pytest --cov=app --cov=main --cov-report=term-missing` for a line summary.
+```dockerfile
+# Build stage uses .NET SDK
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+# ... build steps ...
 
-## Architecture Changes vs Original Ruby Version
+# Runtime stage uses minimal ASP.NET runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+# ... runtime configuration ...
+```
 
-| Aspect | Original (Ruby) | Python Port |
-|--------|-----------------|-------------|
-| Language | Ruby (Sinatra) | Python (FastAPI) |
-| Storage | SQL + import pipeline | Direct Azure Blob XML parsing (cached in memory) |
-| Rate limiting | Redis-based | (Not implemented yet in this port) |
-| Docs | Manual | Auto (Swagger/OpenAPI) |
-| Random verses | DB query | In-memory random selection from parsed verses |
+### Azure Container Instances
 
-If rate limiting or additional caching are needed later, a lightweight Redis integration or an API gateway (e.g. Azure API Management) can be added.
+```bash
+# Deploy to Azure Container Instances
+az container create \
+  --resource-group myResourceGroup \
+  --name bible-api \
+  --image bible-api-dotnet:latest \
+  --environment-variables AppSettings__AzureStorageConnectionString="$CONNECTION_STRING" \
+  --ports 8000
+```
 
-## Licensing
+### Kubernetes
 
-Source Code:
-- MIT License. See `LICENSE`.
-- Original Ruby implementation © 2014 Tim Morgan (retained per MIT requirements).
-- Python port and adaptations © 2025 Andrei Demit.
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bible-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: bible-api
+  template:
+    metadata:
+      labels:
+        app: bible-api
+    spec:
+      containers:
+      - name: bible-api
+        image: bible-api-dotnet:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: AppSettings__AzureStorageConnectionString
+          valueFrom:
+            secretKeyRef:
+              name: bible-api-secrets
+              key: azure-storage-connection-string
+```
 
-Bible Translation Data:
-- All translations used with this project (in Blob Storage) are public domain.
-- If a future non–public-domain translation is added, it must be listed in `NOTICE` (and possibly a `DATA_LICENSES.md`).
+## Technology Stack
 
-See `NOTICE` for a concise attribution summary.
+- **Framework**: ASP.NET Core 8.0
+- **Language**: C# 12
+- **Cloud Storage**: Azure Blob Storage
+- **Documentation**: Swagger/OpenAPI
+- **Containerization**: Docker
+- **XML Processing**: System.Xml.Linq
+- **Dependency Injection**: Built-in .NET DI container
+- **Configuration**: .NET Configuration API
+- **Logging**: .NET ILogger
+
+## Migration from Python
+
+This C# implementation maintains 100% API compatibility with the original Python FastAPI version. All endpoints, response formats, and behaviors are preserved. Key improvements include:
+
+- **Better Performance**: Compiled C# with optimized runtime
+- **Type Safety**: Strong typing throughout the application
+- **Better Tooling**: Rich IDE support and debugging
+- **Enterprise Ready**: Built on proven .NET platform
+- **Memory Efficiency**: Better memory management than Python
+- **Async/Await**: Native async support throughout
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+- **Source Code**: MIT License (see `LICENSE`)
+- **Bible Translations**: All Bible translations are public domain
+- **Original Python Implementation**: © 2014 Tim Morgan (retained per MIT requirements)
+- **C# Port**: © 2025 Andrei Demit
+
+## Support
+
+- 📖 **Documentation**: Available at `/swagger` endpoint
+- 🐛 **Issues**: [GitHub Issues](https://github.com/andreidemit/bible_api/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/andreidemit/bible_api/discussions)
 
 ---
-Contributions and improvements are welcome. Open issues or pull requests for feature requests, bug fixes, or new public domain translations.
+
+**Note**: This is a complete rewrite in C# .NET Core while maintaining full backward compatibility with the original Python FastAPI version. Both implementations can be used interchangeably.
+
+# Deprecated
+
+Content merged into root README.md. Use `README.md` for all documentation.

@@ -1,4 +1,5 @@
 using BibleApi.Models;
+using BibleApi.Core;
 
 namespace BibleApi.Services
 {
@@ -64,15 +65,18 @@ namespace BibleApi.Services
             var startVerse = verseStart ?? 1;
             var endVerse = verseEnd ?? Math.Min(startVerse + 5, 31);
 
+            var normalizedBook = BookMetadata.Normalize(book);
+            var bookName = BookMetadata.GetName(normalizedBook);
+
             for (int v = startVerse; v <= endVerse; v++)
             {
                 verses.Add(new Verse
                 {
-                    BookId = book.ToUpper(),
-                    Book = GetBookName(book.ToUpper()),
+                    BookId = normalizedBook,
+                    Book = bookName,
                     Chapter = chapter,
                     VerseNumber = v,
-                    Text = $"For God so loved the world, that he gave his only begotten Son... ({GetBookName(book.ToUpper())} {chapter}:{v})"
+                    Text = $"For God so loved the world, that he gave his only begotten Son... ({bookName} {chapter}:{v})"
                 });
             }
 
@@ -82,14 +86,16 @@ namespace BibleApi.Services
         public Task<List<BookChapter>> GetChaptersForBookAsync(string translationId, string bookId)
         {
             var chapters = new List<BookChapter>();
-            var chapterCount = GetDefaultChapterCount(bookId.ToUpper());
+            var normalizedBook = BookMetadata.Normalize(bookId);
+            var bookName = BookMetadata.GetName(normalizedBook);
+            var chapterCount = BookMetadata.GetChapterCount(normalizedBook);
 
             for (int i = 1; i <= Math.Min(chapterCount, 5); i++) // Limit for demo
             {
                 chapters.Add(new BookChapter
                 {
-                    BookId = bookId.ToUpper(),
-                    Book = GetBookName(bookId.ToUpper()),
+                    BookId = normalizedBook,
+                    Book = bookName,
                     Chapter = i
                 });
             }
@@ -101,43 +107,23 @@ namespace BibleApi.Services
         {
             var random = new Random();
             var randomBook = books[random.Next(books.Length)];
-            var randomChapter = random.Next(1, 11);
+            var normalizedBook = BookMetadata.Normalize(randomBook);
+            var bookName = BookMetadata.GetName(normalizedBook);
+            var randomChapter = random.Next(1, BookMetadata.GetChapterCount(normalizedBook) + 1);
             var randomVerse = random.Next(1, 21);
 
             var verse = new Verse
             {
-                BookId = randomBook.ToUpper(),
-                Book = GetBookName(randomBook.ToUpper()),
+                BookId = normalizedBook,
+                Book = bookName,
                 Chapter = randomChapter,
                 VerseNumber = randomVerse,
-                Text = $"For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life. ({GetBookName(randomBook.ToUpper())} {randomChapter}:{randomVerse})"
+                Text = $"For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life. ({bookName} {randomChapter}:{randomVerse})"
             };
 
             return Task.FromResult<Verse?>(verse);
         }
 
-        private static string GetBookName(string bookId)
-        {
-            var bookNames = new Dictionary<string, string>
-            {
-                {"GEN", "Genesis"}, {"EXO", "Exodus"}, {"MAT", "Matthew"}, {"MRK", "Mark"}, 
-                {"LUK", "Luke"}, {"JHN", "John"}, {"ACT", "Acts"}, {"ROM", "Romans"},
-                {"1CO", "1 Corinthians"}, {"REV", "Revelation"}
-            };
-
-            return bookNames.TryGetValue(bookId, out string? name) ? name : bookId;
-        }
-
-        private static int GetDefaultChapterCount(string bookId)
-        {
-            var chapterCounts = new Dictionary<string, int>
-            {
-                {"GEN", 50}, {"EXO", 40}, {"MAT", 28}, {"MRK", 16}, 
-                {"LUK", 24}, {"JHN", 21}, {"ACT", 28}, {"ROM", 16},
-                {"1CO", 16}, {"REV", 22}
-            };
-
-            return chapterCounts.TryGetValue(bookId, out int count) ? count : 25;
-        }
+    // Uses centralized BookMetadata for names, chapter counts, normalization.
     }
 }
