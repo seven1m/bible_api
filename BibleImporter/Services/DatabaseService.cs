@@ -91,9 +91,7 @@ namespace BibleImporter.Services
         }
 
         /// <summary>
-        /// Insert verses in bulk for better performance
-        /// NOTE: Schema requires FTKey INT NOT NULL UNIQUE (nonclustered). Since FTKey is not identity,
-        /// we populate it manually using current MAX(FTKey) + 1 sequence semantics within the transaction.
+        /// Insert verses (row-by-row). FTKey removed; full-text key now VerseId.
         /// </summary>
         public async Task<int> InsertVersesAsync(int translationId, int bookId, List<(short chapter, short verse, string text)> verses)
         {
@@ -103,23 +101,13 @@ namespace BibleImporter.Services
             using var transaction = connection.BeginTransaction();
             try
             {
-                // Get current max FTKey (tolerate empty table)
-                int currentFtKey = 0;
-                using (var ftCmd = new SqlCommand("SELECT ISNULL(MAX(FTKey), 0) FROM dbo.Verse", connection, transaction))
-                {
-                    var scalar = await ftCmd.ExecuteScalarAsync();
-                    currentFtKey = Convert.ToInt32(scalar);
-                }
-
                 int insertedCount = 0;
 
                 foreach (var (chapter, verse, text) in verses)
                 {
-                    currentFtKey++; // next unique FTKey
-
                     var insertSql = @"
-                        INSERT INTO dbo.Verse (TranslationId, BookId, ChapterNumber, VerseNumber, Text, FTKey) 
-                        VALUES (@TranslationId, @BookId, @ChapterNumber, @VerseNumber, @Text, @FTKey)";
+                        INSERT INTO dbo.Verse (TranslationId, BookId, ChapterNumber, VerseNumber, Text) 
+                        VALUES (@TranslationId, @BookId, @ChapterNumber, @VerseNumber, @Text)";
 
                     using var cmd = new SqlCommand(insertSql, connection, transaction);
                     cmd.Parameters.AddWithValue("@TranslationId", translationId);
@@ -127,10 +115,18 @@ namespace BibleImporter.Services
                     cmd.Parameters.AddWithValue("@ChapterNumber", chapter);
                     cmd.Parameters.AddWithValue("@VerseNumber", verse);
                     cmd.Parameters.AddWithValue("@Text", text);
-                    cmd.Parameters.AddWithValue("@FTKey", currentFtKey);
 
-                    var rowsAffected = await cmd.ExecuteNonQueryAsync();
-                    insertedCount += rowsAffected;
+                    try
+                    {
+                        var rowsAffected = await cmd.ExecuteNonQueryAsync();
+                        insertedCount += rowsAffected;
+                    }
+                    catch (SqlException sqlex) when (sqlex.Number == 2601 || sqlex.Number == 2627)
+                    {
+                        // Duplicate key (either unique verse constraint); skip gracefully
+                        _logger.LogWarning(sqlex, "Duplicate verse skipped T={T} B={B} C={C} V={V}", translationId, bookId, chapter, verse);
+                        continue;
+                    }
                 }
 
                 await transaction.CommitAsync();
@@ -138,8 +134,23 @@ namespace BibleImporter.Services
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                Exception? rollbackEx = null;
+                try
+                {
+                    if (transaction.Connection != null)
+                        await transaction.RollbackAsync();
+                }
+                catch (Exception rex)
+                {
+                    rollbackEx = rex;
+                    _logger.LogWarning(rex, "Rollback failed (transaction already completed)");
+                }
+
                 _logger.LogError(ex, "Failed to insert verses batch (TranslationId={TranslationId}, BookId={BookId})", translationId, bookId);
+
+                if (rollbackEx != null)
+                    throw new AggregateException("Insert failed and rollback failed; see inner exceptions.", ex, rollbackEx);
+
                 throw;
             }
         }
