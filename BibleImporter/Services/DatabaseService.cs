@@ -92,6 +92,8 @@ namespace BibleImporter.Services
 
         /// <summary>
         /// Insert verses in bulk for better performance
+        /// NOTE: Schema requires FTKey INT NOT NULL UNIQUE (nonclustered). Since FTKey is not identity,
+        /// we populate it manually using current MAX(FTKey) + 1 sequence semantics within the transaction.
         /// </summary>
         public async Task<int> InsertVersesAsync(int translationId, int bookId, List<(short chapter, short verse, string text)> verses)
         {
@@ -101,13 +103,23 @@ namespace BibleImporter.Services
             using var transaction = connection.BeginTransaction();
             try
             {
+                // Get current max FTKey (tolerate empty table)
+                int currentFtKey = 0;
+                using (var ftCmd = new SqlCommand("SELECT ISNULL(MAX(FTKey), 0) FROM dbo.Verse", connection, transaction))
+                {
+                    var scalar = await ftCmd.ExecuteScalarAsync();
+                    currentFtKey = Convert.ToInt32(scalar);
+                }
+
                 int insertedCount = 0;
 
                 foreach (var (chapter, verse, text) in verses)
                 {
+                    currentFtKey++; // next unique FTKey
+
                     var insertSql = @"
-                        INSERT INTO dbo.Verse (TranslationId, BookId, ChapterNumber, VerseNumber, Text) 
-                        VALUES (@TranslationId, @BookId, @ChapterNumber, @VerseNumber, @Text)";
+                        INSERT INTO dbo.Verse (TranslationId, BookId, ChapterNumber, VerseNumber, Text, FTKey) 
+                        VALUES (@TranslationId, @BookId, @ChapterNumber, @VerseNumber, @Text, @FTKey)";
 
                     using var cmd = new SqlCommand(insertSql, connection, transaction);
                     cmd.Parameters.AddWithValue("@TranslationId", translationId);
@@ -115,6 +127,7 @@ namespace BibleImporter.Services
                     cmd.Parameters.AddWithValue("@ChapterNumber", chapter);
                     cmd.Parameters.AddWithValue("@VerseNumber", verse);
                     cmd.Parameters.AddWithValue("@Text", text);
+                    cmd.Parameters.AddWithValue("@FTKey", currentFtKey);
 
                     var rowsAffected = await cmd.ExecuteNonQueryAsync();
                     insertedCount += rowsAffected;
@@ -123,9 +136,10 @@ namespace BibleImporter.Services
                 await transaction.CommitAsync();
                 return insertedCount;
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                _logger.LogError(ex, "Failed to insert verses batch (TranslationId={TranslationId}, BookId={BookId})", translationId, bookId);
                 throw;
             }
         }

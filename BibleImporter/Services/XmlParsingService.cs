@@ -2,6 +2,7 @@ using System.Xml.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using BibleApi.Core;
+using System.Text;
 
 namespace BibleImporter.Services
 {
@@ -24,7 +25,19 @@ namespace BibleImporter.Services
         {
             try
             {
-                var doc = XDocument.Parse(xmlContent);
+                if (string.IsNullOrWhiteSpace(xmlContent))
+                {
+                    throw new InvalidOperationException("XML content is empty or whitespace.");
+                }
+
+                var trimmedStart = xmlContent.Length > 100 ? xmlContent.Substring(0, 100) : xmlContent;
+                if (!trimmedStart.TrimStart().StartsWith("<"))
+                {
+                    var preview = new string(trimmedStart.Take(40).Select(c => char.IsControl(c) ? '?' : c).ToArray());
+                    throw new InvalidOperationException($"XML does not start with '<'. Starts with: '{preview}'");
+                }
+
+                var doc = XDocument.Parse(xmlContent, LoadOptions.PreserveWhitespace);
                 var result = new ParsedBibleData();
 
                 // Extract translation info
@@ -49,7 +62,13 @@ namespace BibleImporter.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to parse USFX XML");
+                try
+                {
+                    var firstChars = xmlContent != null ? new string(xmlContent.Take(16).Select(c => char.IsControl(c) ? '?' : c).ToArray()) : string.Empty;
+                    var firstBytesHex = xmlContent != null ? string.Join(" ", xmlContent.Take(16).Select(c => ((int)c).ToString("X2"))) : string.Empty;
+                    _logger.LogError(ex, "Failed to parse USFX XML. FirstChars='{FirstChars}' FirstBytesHex={FirstBytes}", firstChars, firstBytesHex);
+                }
+                catch { /* swallow secondary logging errors */ }
                 throw new InvalidOperationException($"XML parsing failed: {ex.Message}", ex);
             }
         }

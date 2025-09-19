@@ -1,6 +1,8 @@
 using Azure.Storage.Blobs;
 using BibleImporter.Configuration;
 using Microsoft.Extensions.Logging;
+using System.IO.Compression;
+using System.Text;
 
 namespace BibleImporter.Services
 {
@@ -118,8 +120,43 @@ namespace BibleImporter.Services
                     return null;
                 }
 
-                var response = await blobClient.DownloadContentAsync();
-                return response.Value.Content.ToString();
+                // Stream download for better control over bytes
+                var download = await blobClient.DownloadStreamingAsync();
+                await using var stream = download.Value.Content;
+
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                var bytes = ms.ToArray();
+
+                if (bytes.Length == 0)
+                {
+                    _logger.LogWarning("Blob {BlobName} is empty", blobName);
+                    return null;
+                }
+
+                // Detect gzip (1F 8B)
+                if (bytes.Length >= 2 && bytes[0] == 0x1F && bytes[1] == 0x8B)
+                {
+                    _logger.LogInformation("Blob {BlobName} appears gzip-compressed; decompressing", blobName);
+                    using var gzip = new GZipStream(new MemoryStream(bytes), CompressionMode.Decompress);
+                    using var decompressed = new MemoryStream();
+                    await gzip.CopyToAsync(decompressed);
+                    bytes = decompressed.ToArray();
+                }
+
+                var encoding = DetectEncoding(bytes) ?? Encoding.UTF8;
+                var text = encoding.GetString(bytes);
+                text = PreprocessXml(text);
+
+                // Basic diagnostics (Debug level)
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    var sample = text.Length > 120 ? text.Substring(0, 120) + "..." : text;
+                    _logger.LogDebug("Blob {BlobName} bytes={ByteLen} decodedLen={Len} startsWith='{Start}' sample={Sample}",
+                        blobName, bytes.Length, text.Length, text.Length > 0 ? text[0] : '?', sample.Replace('\n', ' ').Replace('\r', ' '));
+                }
+
+                return text;
             }
             catch (Azure.RequestFailedException ex) when (ex.Status == 404)
             {
@@ -131,6 +168,40 @@ namespace BibleImporter.Services
                 _logger.LogError(ex, "Error downloading blob: {BlobName}", blobName);
                 throw;
             }
+        }
+
+        private static Encoding? DetectEncoding(byte[] bytes)
+        {
+            if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+                return new UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
+            if (bytes.Length >= 2)
+            {
+                if (bytes[0] == 0xFF && bytes[1] == 0xFE) return Encoding.Unicode; // UTF-16 LE
+                if (bytes[0] == 0xFE && bytes[1] == 0xFF) return Encoding.BigEndianUnicode; // UTF-16 BE
+            }
+            return null; // Fallback to UTF-8
+        }
+
+        private static string PreprocessXml(string xml)
+        {
+            if (string.IsNullOrEmpty(xml)) return xml;
+
+            // Strip common invisible characters at start
+            xml = xml.TrimStart('\uFEFF', '\u200B', '\u200E', '\u200F');
+
+            // If there's junk before first '<', remove it
+            var ltIndex = xml.IndexOf('<');
+            if (ltIndex > 0)
+                xml = xml.Substring(ltIndex);
+
+            // Remove illegal control chars (preserve TAB, CR, LF)
+            var sb = new StringBuilder(xml.Length);
+            foreach (var ch in xml)
+            {
+                if (ch == '\t' || ch == '\n' || ch == '\r' || ch >= ' ')
+                    sb.Append(ch);
+            }
+            return sb.ToString();
         }
 
         /// <summary>
