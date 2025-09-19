@@ -113,7 +113,7 @@ namespace BibleImporter
                 // Test database connection
                 if (!await _dbService.TestConnectionAsync())
                 {
-                    _logger.LogError("Database connection failed");
+                    _logger.LogError("Database connection failed\n");
                     return false;
                 }
 
