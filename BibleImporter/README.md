@@ -4,10 +4,10 @@ A standalone console application that retrieves XML files from Azure Blob Storag
 
 ## Features
 
-- **Console Interface**: Interactive book name input
-- **Azure Blob Storage Integration**: Searches and retrieves XML files
-- **USFX XML Parsing**: Parses the specific USFX format with verse structure
-- **Azure SQL Database Import**: Imports data using the precise schema provided
+- **Console Interface**: Interactive XML filename input
+- **Azure Blob Storage Integration**: Retrieves XML files by exact filename
+- **USFX XML Parsing**: Parses entire Bible translations with complete verse structure
+- **Azure SQL Database Import**: Imports complete translations using the precise schema provided
 - **Error Handling**: JSON formatted error and success responses
 - **Configuration Support**: JSON and INI configuration file support
 
@@ -104,22 +104,24 @@ The application parses USFX (Unified Standard Format XML) files with this struct
    dotnet run
    ```
 
-4. **Enter the book name** when prompted (e.g., "Genesis", "Matthew", "kjv", etc.)
+4. **Enter the XML filename** when prompted (e.g., "web.xml", "kjv.xml", "asv.xml")
+
+**Note**: The application now imports entire Bible translations from XML files. Provide the exact filename (including .xml extension) of the translation file stored in your Azure Blob Storage container. This imports all books and verses from that translation into the database.
 
 ## Output Formats
 
 ### Success Response
 ```json
 {
-  "books_copied": 1,
-  "verses_copied": 1533
+  "books_copied": 66,
+  "verses_copied": 31102
 }
 ```
 
 ### Error Response
 ```json
 {
-  "error": "XML file not found for book: invalid_book_name"
+  "error": "XML file not found: invalid_filename.xml"
 }
 ```
 
@@ -129,10 +131,11 @@ The application handles various error scenarios:
 
 - **Missing Configuration**: Invalid or missing configuration file
 - **Connection Failures**: Azure Blob Storage or SQL Database connection issues
-- **File Not Found**: XML file not found for the specified book name
+- **File Not Found**: XML file not found with the specified filename
 - **Invalid XML**: Malformed or invalid XML content
 - **Database Errors**: SQL operation failures
 - **Parsing Errors**: XML parsing or data extraction issues
+- **Invalid Input**: Non-XML file extensions or empty filenames
 
 All errors are returned in JSON format with a descriptive error message and the application exits with a non-zero code.
 

@@ -51,18 +51,25 @@ namespace BibleImporter
                     return 1;
                 }
 
-                // Get user input for book name
-                Console.Write("Enter the book name to import: ");
-                var bookName = Console.ReadLine()?.Trim();
+                // Get user input for file name
+                Console.Write("Enter the XML file name to import: ");
+                var fileName = Console.ReadLine()?.Trim();
 
-                if (string.IsNullOrWhiteSpace(bookName))
+                if (string.IsNullOrWhiteSpace(fileName))
                 {
-                    OutputError("Book name cannot be empty.");
+                    OutputError("File name cannot be empty.");
+                    return 1;
+                }
+
+                // Basic validation - ensure it's an XML file
+                if (!fileName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
+                {
+                    OutputError("File must be an XML file (.xml extension required).");
                     return 1;
                 }
 
                 // Execute the import process
-                var result = await ImportBookAsync(bookName);
+                var result = await ImportFileAsync(fileName);
                 
                 // Output result in JSON format
                 Console.WriteLine(JsonSerializer.Serialize(result));
@@ -126,19 +133,19 @@ namespace BibleImporter
             }
         }
 
-        private async Task<Dictionary<string, object>> ImportBookAsync(string bookName)
+        private async Task<Dictionary<string, object>> ImportFileAsync(string fileName)
         {
             try
             {
-                // Step 1: Search and retrieve XML file from Azure Blob Storage
-                _logger.LogInformation("Searching for XML file for book: {BookName}", bookName);
-                var xmlContent = await _blobService.GetXmlFileByBookNameAsync(bookName);
+                // Step 1: Retrieve XML file from Azure Blob Storage by exact filename
+                _logger.LogInformation("Retrieving XML file: {FileName}", fileName);
+                var xmlContent = await _blobService.GetXmlContentAsync(fileName);
                 
                 if (string.IsNullOrEmpty(xmlContent))
                 {
                     return new Dictionary<string, object> 
                     { 
-                        ["error"] = $"XML file not found for book: {bookName}" 
+                        ["error"] = $"XML file not found: {fileName}" 
                     };
                 }
 
@@ -152,8 +159,8 @@ namespace BibleImporter
                 }
 
                 // Step 2: Parse XML content
-                _logger.LogInformation("Parsing XML content for book: {BookName}", bookName);
-                var parsedData = _xmlService.ParseUsfxXml(xmlContent, bookName.ToLower());
+                _logger.LogInformation("Parsing XML content from file: {FileName}", fileName);
+                var parsedData = _xmlService.ParseUsfxXml(xmlContent, Path.GetFileNameWithoutExtension(fileName));
                 
                 if (!parsedData.Books.Any())
                 {
@@ -196,7 +203,7 @@ namespace BibleImporter
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error importing book: {BookName}", bookName);
+                _logger.LogError(ex, "Error importing file: {FileName}", fileName);
                 return new Dictionary<string, object> 
                 { 
                     ["error"] = $"Import failed: {ex.Message}" 
