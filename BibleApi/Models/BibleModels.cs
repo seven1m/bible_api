@@ -163,4 +163,22 @@ namespace BibleApi.Models
         
         public string? Url { get; set; }
     }
+
+    /// <summary>
+    /// Response model for verse search queries
+    /// </summary>
+    public class SearchResponse
+    {
+        [Required]
+        public Translation Translation { get; set; } = new();
+        
+        [Required]
+        public string Query { get; set; } = string.Empty;
+        
+        [Required]
+        public int TotalResults { get; set; }
+        
+        [Required]
+        public List<Verse> Results { get; set; } = new();
+    }
 }

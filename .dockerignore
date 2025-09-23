@@ -1,41 +1,61 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.pytest_cache
-.mypy_cache
-.pytype
-.coverage*
-htmlcov/
-
-# Virtual environments
-venv/
-.env
-.env.*
-!.env.example
-
-# Git
-.git
-.gitignore
-
-# Editor / OS
-.vscode
-.idea
-.DS_Store
-Thumbs.db
-
-# Logs & temp
-*.log
-*.tmp
-*.swp
-
-# Tests / artifacts
-.tox
+# .NET Build artifacts
+bin/
+obj/
+out/
 build/
 dist/
-site/
-reports/
+*.log
+*.tmp
+
+# Package management
+packages/
+packages.lock.json
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+
+# IDE/Editor files
+.vscode/
+.idea/
+.vs/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
 
 # Docker
 Dockerfile.*
+docker-compose*.yml
+.dockerignore
+
+# Documentation & CI
+README.md
+*.md
+.github/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+appsettings.Local.json
+
+# Temporary files
+*.tmp
+*.temp
+*.cache

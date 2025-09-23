@@ -8,25 +8,36 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 
 WORKDIR /src
 
-# Copy csproj and restore dependencies
+# Copy solution and project files for better layer caching
+COPY BibleApi.sln ./
 COPY BibleApi/BibleApi.csproj BibleApi/
-RUN dotnet restore BibleApi/BibleApi.csproj
+COPY BibleApi.Tests/BibleApi.Tests.csproj BibleApi.Tests/
+COPY BibleImporter/BibleImporter.csproj BibleImporter/
 
-# Copy everything else and build
+# Restore dependencies for all projects
+RUN dotnet restore BibleApi.sln
+
+# Copy source files and build
 COPY BibleApi/ BibleApi/
+COPY BibleApi.Tests/ BibleApi.Tests/
+COPY BibleImporter/ BibleImporter/
+
 WORKDIR /src/BibleApi
-RUN dotnet build BibleApi.csproj -c Release -o /app/build
+RUN dotnet build BibleApi.csproj -c Release -o /app/build --no-restore
 
 # Publish the application
-RUN dotnet publish BibleApi.csproj -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish BibleApi.csproj -c Release -o /app/publish /p:UseAppHost=false --no-restore
 
 # Use the official .NET runtime image for running
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 
-# Set environment variables
+# Set environment variables for optimization
 ENV ASPNETCORE_ENVIRONMENT=Production \
     ASPNETCORE_URLS=http://+:8000 \
-    DOTNET_RUNNING_IN_CONTAINER=true
+    DOTNET_RUNNING_IN_CONTAINER=true \
+    DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true \
+    DOTNET_USE_POLLING_FILE_WATCHER=true \
+    ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
 
 WORKDIR /app
 
@@ -45,9 +56,9 @@ COPY --from=build /app/publish .
 
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -fsS http://localhost:8000/healthz || exit 1
+# Enhanced health check with better timeout and failure handling
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -fsS http://localhost:8000/healthz --max-time 8 || exit 1
 
 # Default command
 ENTRYPOINT ["dotnet", "BibleApi.dll"]

@@ -60,7 +60,7 @@ namespace BibleApi.Core
         /// </summary>
         public static string Normalize(string input)
         {
-            if (string.IsNullOrWhiteSpace(input)) return input.Trim().ToUpper();
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
             var raw = input.Trim().ToUpper();
             if (_bookNames.ContainsKey(raw)) return raw; // already a code
 
@@ -81,7 +81,7 @@ namespace BibleApi.Core
 
         public static string GetName(string code)
         {
-            if (string.IsNullOrWhiteSpace(code)) return code;
+            if (string.IsNullOrWhiteSpace(code)) return string.Empty;
             return _bookNames.TryGetValue(code.ToUpper(), out var name) ? name : code.ToUpper();
         }
 

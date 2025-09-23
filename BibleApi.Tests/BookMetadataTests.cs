@@ -28,6 +28,26 @@ namespace BibleApi.Tests
         }
 
         [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public void Normalize_NullOrEmpty_ReturnsEmpty(string? input)
+        {
+            var actual = BookMetadata.Normalize(input!);
+            Assert.Equal(string.Empty, actual);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public void GetName_NullOrEmpty_ReturnsEmpty(string? input)
+        {
+            var actual = BookMetadata.GetName(input!);
+            Assert.Equal(string.Empty, actual);
+        }
+
+        [Theory]
         [InlineData("GEN", "Genesis")]
         [InlineData("REV", "Revelation")]
         [InlineData("PHP", "Philippians")]

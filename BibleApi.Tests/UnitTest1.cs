@@ -2,7 +2,6 @@ using Xunit;
 using BibleApi.Core;
 using BibleApi.Models;
 using BibleApi.Services;
-using BibleApi.Tests.TestDoubles;
 
 namespace BibleApi.Tests;
 
@@ -59,7 +58,7 @@ public class MockServiceTests
     public async Task MockService_Should_Return_Translations()
     {
         // Arrange
-        var service = new MockAzureXmlBibleService();
+        var service = new BibleApi.Services.MockAzureXmlBibleService();
         
         // Act
         var translations = await service.ListTranslationsAsync();
@@ -74,7 +73,7 @@ public class MockServiceTests
     public async Task MockService_Should_Return_Verses()
     {
         // Arrange
-        var service = new MockAzureXmlBibleService();
+        var service = new BibleApi.Services.MockAzureXmlBibleService();
         
         // Act
         var verses = await service.GetVersesByReferenceAsync("kjv", "GEN", 1);

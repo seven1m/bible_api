@@ -172,12 +172,45 @@ namespace BibleApi.Controllers
         [HttpGet("data/{translationId}/{bookId}/{chapter:int}")]
         [ProducesResponseType(typeof(VersesInChapterResponse), 200)]
         [ProducesResponseType(404)]
-        public async Task<ActionResult<VersesInChapterResponse>> GetChapterVerses(string translationId, string bookId, int chapter)
+        public async Task<ActionResult<VersesInChapterResponse>> GetChapterVerses(
+            string translationId, 
+            string bookId, 
+            int chapter,
+            [FromQuery] int? verse_start = null,
+            [FromQuery] int? verse_end = null)
         {
             try
             {
+                // Input validation
+                if (chapter <= 0)
+                {
+                    return BadRequest(new { error = "Chapter must be greater than 0" });
+                }
+
+                if (verse_start.HasValue && verse_start.Value <= 0)
+                {
+                    return BadRequest(new { error = "verse_start must be greater than 0" });
+                }
+
+                if (verse_end.HasValue && verse_end.Value <= 0)
+                {
+                    return BadRequest(new { error = "verse_end must be greater than 0" });
+                }
+
+                if (verse_start.HasValue && verse_end.HasValue && verse_start.Value > verse_end.Value)
+                {
+                    return BadRequest(new { error = "verse_start must be less than or equal to verse_end" });
+                }
+
+                // Validate book ID
+                var normalizedBook = BookMetadata.Normalize(bookId);
+                if (!BookMetadata.IsValid(normalizedBook))
+                {
+                    return NotFound(new { error = "Invalid book identifier" });
+                }
+
                 var translation = await GetTranslationAsync(translationId);
-                var verses = await _azureService.GetVersesByReferenceAsync(translationId, bookId, chapter);
+                var verses = await _azureService.GetVersesByReferenceAsync(translationId, bookId, chapter, verse_start, verse_end);
 
                 if (!verses.Any())
                 {
@@ -250,6 +283,107 @@ namespace BibleApi.Controllers
             {
                 _logger.LogError(ex, "Error getting random verse for {TranslationId}/{BookId}", translationId, bookId);
                 return StatusCode(500, new { error = "Error getting random verse" });
+            }
+        }
+
+        /// <summary>
+        /// Search for verses containing specific text
+        /// GET /v1/search/{translation_id}?q={query}&books={book_list}
+        /// </summary>
+        [HttpGet("search/{translationId}")]
+        [ProducesResponseType(typeof(SearchResponse), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<SearchResponse>> SearchVerses(
+            string translationId,
+            [FromQuery] string q,
+            [FromQuery] string? books = null,
+            [FromQuery] int limit = 25)
+        {
+            try
+            {
+                // Input validation
+                if (string.IsNullOrWhiteSpace(q))
+                {
+                    return BadRequest(new { error = "Search query 'q' is required" });
+                }
+
+                if (q.Length < 3)
+                {
+                    return BadRequest(new { error = "Search query must be at least 3 characters" });
+                }
+
+                if (limit <= 0 || limit > 100)
+                {
+                    return BadRequest(new { error = "Limit must be between 1 and 100" });
+                }
+
+                var translation = await GetTranslationAsync(translationId);
+                
+                // Parse book list or default to all books
+                string[] searchBooks;
+                if (!string.IsNullOrWhiteSpace(books))
+                {
+                    var bookList = books.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                      .Select(b => BookMetadata.Normalize(b.Trim()))
+                                      .Where(b => BookMetadata.IsValid(b))
+                                      .ToArray();
+                    
+                    if (!bookList.Any())
+                    {
+                        return BadRequest(new { error = "No valid books specified" });
+                    }
+                    
+                    searchBooks = bookList;
+                }
+                else
+                {
+                    searchBooks = BibleConstants.ProtestantBooks;
+                }
+
+                // Simple text search implementation (mock for now)
+                var searchResults = new List<Verse>();
+                var queryLower = q.ToLower();
+                
+                // Search through sample verses from first few chapters of each book
+                foreach (var book in searchBooks.Take(5)) // Limit books for demo
+                {
+                    for (int chapter = 1; chapter <= Math.Min(BookMetadata.GetChapterCount(book), 3); chapter++)
+                    {
+                        var verses = await _azureService.GetVersesByReferenceAsync(translationId, book, chapter, 1, 5);
+                        
+                        var matchingVerses = verses.Where(v => 
+                            v.Text.ToLower().Contains(queryLower))
+                            .Take(limit - searchResults.Count);
+                        
+                        searchResults.AddRange(matchingVerses);
+                        
+                        if (searchResults.Count >= limit)
+                            break;
+                    }
+                    
+                    if (searchResults.Count >= limit)
+                        break;
+                }
+
+                var response = new SearchResponse
+                {
+                    Translation = translation,
+                    Query = q,
+                    TotalResults = searchResults.Count,
+                    Results = searchResults.Take(limit).ToList()
+                };
+
+                return Ok(response);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { error = "translation not found" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching verses for {TranslationId} with query '{Query}'", translationId, q);
+                return StatusCode(500, new { error = "Error performing search" });
             }
         }
 
