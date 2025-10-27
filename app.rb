@@ -256,6 +256,7 @@ def display_verse_from(ref_string)
   translation = get_translation
   # someone DOSing us
   if ref_string =~ /^john.1,2,3,4,5,6,7,8,9,10$/
+    p request.env if rand(100) < 2
     status 400
     return 'error'
   end
