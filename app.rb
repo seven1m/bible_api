@@ -254,6 +254,11 @@ end
 
 def display_verse_from(ref_string)
   translation = get_translation
+  # someone DOSing us
+  if ref_string =~ /^john.1,2,3,4,5,6,7,8,9,10$/
+    status 400
+    return 'error'
+  end
   ref = BibleRef::Reference.new(ref_string, language: translation[:language_code], single_chapter_book_matching:)
   if (ranges = ref.ranges)
     if (verses = get_verses(ranges, translation[:id]))
