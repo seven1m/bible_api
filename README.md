@@ -1,295 +1,356 @@
-# Bible API (C# .NET Core Edition)
+# Bible API (.NET 9)
 
-This repository contains a C# .NET Core Web API implementation of a Bible verses and passages API. It serves JSON responses for public domain Bible translations, reading data directly from XML files stored in Azure Blob Storage.
+A modern, high-performance Bible verses and passages API built with C# .NET 9. Serves JSON responses for public domain Bible translations, reading data directly from XML files stored in Azure Blob Storage.
 
-**🎯 This is a complete conversion from the original Python FastAPI implementation to C# .NET Core, maintaining full API compatibility.**
+**🚀 Recently Modernized:** Fully migrated to .NET 9 with Infrastructure as Code (Terraform) and production-ready Docker setup.
 
-## Projects
+## ✨ Features
 
-- **BibleApi**: Web API service for serving Bible data
-- **BibleImporter**: Console application for importing XML Bible data into Azure SQL Database
-- **BibleApi.Tests**: Unit tests for the API
-- **BibleImporter.Tests**: Unit tests for the importer
+- 🎯 **RESTful API** with versioned endpoints (`/v1/*`)
+- 📖 **Multiple Bible translations** support
+- 🔍 **Search functionality** across verses
+- 🎲 **Random verse** generator
+- 📊 **Swagger/OpenAPI** documentation
+- ⚡ **In-memory caching** for performance
+- 🐳 **Docker** containerization
+- ☁️ **Azure** cloud-ready
+- 🏗️ **Infrastructure as Code** (Terraform)
+- 🧪 **Unit tests** with xUnit
 
-## Quick Start
+## 📁 Project Structure
 
-### Using Docker
-
-```bash
-# Build the Docker image
-docker build -f Dockerfile.dotnet -t bible-api-dotnet:latest .
-
-# Run with environment variables
-docker run -p 8000:8000 \
-  -e APPSETTINGS__AZURESTORAGECONNECTIONSTRING="your-azure-connection-string" \
-  -e APPSETTINGS__AZURECONTAINERNAME="bible-translations" \
-  bible-api-dotnet:latest
+```
+bible_api/
+├── src/
+│   └── BibleApi/              # Main API project (.NET 9)
+│       ├── Controllers/       # API endpoints
+│       ├── Services/          # Business logic
+│       ├── Models/            # DTOs and domain models
+│       ├── Core/              # Shared utilities
+│       └── Configuration/     # App settings
+├── tests/
+│   └── BibleApi.Tests/        # Unit tests (xUnit)
+├── docker/
+│   ├── Dockerfile             # .NET 9 Alpine image
+│   ├── docker-compose.yml     # Full local dev environment
+│   └── README.md              # Docker documentation
+├── infrastructure/
+│   ├── terraform/             # Azure IaC
+│   │   ├── main.tf           # Main resources
+│   │   ├── variables.tf      # Configuration
+│   │   └── modules/          # Reusable modules
+│   └── sql/                   # Database scripts
+└── docs/                      # Documentation
 ```
 
-### Running Locally
+## 🚀 Quick Start
+
+### Option 1: Docker Compose (Recommended)
 
 ```bash
 # Clone the repository
 git clone https://github.com/andreidemit/bible_api.git
-cd bible_api/BibleApi
+cd bible_api
 
-# Install dependencies
-dotnet restore
-
-# Set environment variables (optional - will use mock data if not set)
-export AppSettings__AzureStorageConnectionString="your-azure-connection-string"
-export AppSettings__AzureContainerName="bible-translations"
-
-# Run the application
-dotnet run --urls=http://localhost:8000
+# Start all services (API + Redis + SQL + Adminer)
+cd docker
+docker-compose up
 ```
 
-The API will be available at `http://localhost:8000` with automatic Swagger documentation at `/swagger`.
+**Services Available:**
+- 🌐 **API**: http://localhost:8000
+- 📚 **Swagger UI**: http://localhost:8000/swagger
+- 🗄️ **Database Admin**: http://localhost:8081
+- 🔴 **Redis Commander**: http://localhost:8082
 
-## API Documentation
+### Option 2: Docker Only
+
+```bash
+# Build the image
+docker build -f docker/Dockerfile -t bible-api:latest .
+
+# Run container
+docker run -p 8000:8000 \
+  -e ASPNETCORE_ENVIRONMENT=Development \
+  -e AppSettings__AzureStorageConnectionString="your-connection-string" \
+  bible-api:latest
+```
+
+### Option 3: Local Development (.NET 9 SDK Required)
+
+```bash
+# Install .NET 9 SDK
+# https://dotnet.microsoft.com/download/dotnet/9.0
+
+# Restore dependencies
+dotnet restore
+
+# Run the API
+cd src/BibleApi
+dotnet run
+```
+
+## 📖 API Documentation
 
 ### Core Endpoints
 
-All endpoints return JSON responses. Full API documentation is available at `/swagger` when running the application.
+All endpoints return JSON. Full interactive docs at `/swagger`.
 
-#### List Translations
-```
+#### 1. List All Translations
+```http
 GET /v1/data
 ```
-Returns a list of all available Bible translations.
 
-#### Get Books for Translation
+**Response:**
+```json
+{
+  "translations": [
+    {
+      "identifier": "kjv",
+      "name": "King James Version",
+      "language": "english",
+      "languageCode": "en",
+      "license": "Public Domain",
+      "url": "http://localhost:8000/v1/data/kjv"
+    }
+  ]
+}
 ```
+
+#### 2. Get Books in Translation
+```http
 GET /v1/data/{translationId}
 ```
-Returns all books available in the specified translation.
 
-#### Get Chapters for Book
-```
+**Example:** `/v1/data/kjv`
+
+#### 3. Get Chapters in Book
+```http
 GET /v1/data/{translationId}/{bookId}
 ```
-Returns all chapters for the specified book in the translation.
 
-#### Get Verses for Chapter
-```
-GET /v1/data/{translationId}/{bookId}/{chapter}
-```
-Returns all verses for the specified chapter.
+**Example:** `/v1/data/kjv/GEN`
 
-#### Random Verse
+#### 4. Get Verses in Chapter
+```http
+GET /v1/data/{translationId}/{bookId}/{chapter}?verse_start=1&verse_end=10
 ```
-GET /v1/data/{translationId}/random/{bookId}
-```
-Returns a random verse from the specified book(s). Use `OT` for Old Testament, `NT` for New Testament, or specific book IDs separated by commas.
 
-#### Health Check
+**Example:** `/v1/data/kjv/JHN/3?verse_start=16&verse_end=17`
+
+#### 5. Random Verse
+```http
+GET /v1/data/{translationId}/random/{bookIds}
 ```
+
+**Examples:**
+- `/v1/data/kjv/random/OT` - Random from Old Testament
+- `/v1/data/kjv/random/NT` - Random from New Testament
+- `/v1/data/kjv/random/GEN,EXO` - Random from Genesis or Exodus
+
+#### 6. Search Verses
+```http
+GET /v1/search/{translationId}?q={searchTerm}&limit=25
+```
+
+**Example:** `/v1/search/kjv?q=faith&limit=10`
+
+#### 7. Health Check
+```http
 GET /healthz
 ```
-Returns API health status.
 
-### Example API Calls
+### Example Usage
 
 ```bash
-# List all translations
+# List translations
 curl http://localhost:8000/v1/data
 
-# Get books in King James Version
-curl http://localhost:8000/v1/data/kjv
+# Get John 3:16
+curl http://localhost:8000/v1/data/kjv/JHN/3?verse_start=16&verse_end=16
 
-# Get chapters in Genesis
-curl http://localhost:8000/v1/data/kjv/GEN
+# Search for "love"
+curl http://localhost:8000/v1/search/kjv?q=love&limit=5
 
-# Get verses from John chapter 3
-curl http://localhost:8000/v1/data/kjv/JHN/3
-
-# Get random verse from New Testament
-curl http://localhost:8000/v1/data/kjv/random/NT
+# Random verse from Psalms
+curl http://localhost:8000/v1/data/kjv/random/PSA
 ```
 
-## Configuration
+## 🏗️ Infrastructure as Code
 
-The application uses the .NET configuration system. Settings can be provided via:
-
-- `appsettings.json` file
-- Environment variables (prefixed with `AppSettings__`)
-- Command line arguments
-- Azure Key Vault (in production)
-
-### Required Settings
-
-| Setting | Environment Variable | Description |
-|---------|---------------------|-------------|
-| `AzureStorageConnectionString` | `AppSettings__AzureStorageConnectionString` | Azure Storage connection string for Bible XML files |
-| `AzureContainerName` | `AppSettings__AzureContainerName` | Container name (default: "bible-translations") |
-
-### Optional Settings
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `Environment` | "development" | Application environment |
-| `AllowedOrigins` | ["*"] | CORS allowed origins |
-| `AllowedMethods` | ["GET", "OPTIONS"] | CORS allowed methods |
-| `AllowedHeaders` | ["Content-Type"] | CORS allowed headers |
-
-## Development
-
-### Project Structure
-
-```
-BibleApi/
-├── Controllers/         # API controllers
-│   └── BibleController.cs
-├── Models/             # Data models and DTOs
-│   └── BibleModels.cs
-├── Services/           # Business logic services
-│   ├── IAzureXmlBibleService.cs
-│   ├── AzureXmlBibleService.cs
-│   └── MockAzureXmlBibleService.cs
-├── Configuration/      # Configuration classes
-│   └── AppSettings.cs
-├── Core/              # Core utilities and constants
-│   └── BibleConstants.cs
-└── Program.cs         # Application entry point
-```
-
-### Building and Testing
+Deploy to Azure using Terraform:
 
 ```bash
-# Build the project
-dotnet build
+cd infrastructure/terraform
 
-# Run tests (when implemented)
+# Copy example config
+cp terraform.tfvars.example terraform.tfvars
+
+# Edit with your values
+nano terraform.tfvars
+
+# Initialize Terraform
+terraform init
+
+# Preview changes
+terraform plan
+
+# Deploy
+terraform apply
+```
+
+**Resources Created:**
+- Resource Group
+- Azure Blob Storage (for Bible XML files)
+- Container Registry (for Docker images)
+- App Service Plan + App Service (Linux)
+- Application Insights (monitoring)
+- SQL Database (optional)
+
+See `infrastructure/terraform/README.md` for details.
+
+## 🐳 Docker Deployment
+
+### Build for Production
+
+```bash
+# Build optimized image
+docker build -f docker/Dockerfile -t bible-api:latest .
+
+# Tag for Azure Container Registry
+docker tag bible-api:latest myregistry.azurecr.io/bible-api:v1.0.0
+
+# Push to ACR
+docker push myregistry.azurecr.io/bible-api:v1.0.0
+```
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ASPNETCORE_ENVIRONMENT` | Environment name | `Production` |
+| `AppSettings__AzureStorageConnectionString` | Azure Blob connection | Required |
+| `AppSettings__AzureContainerName` | Blob container name | `bible-translations` |
+| `ConnectionStrings__Redis` | Redis connection (optional) | - |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | App Insights (optional) | - |
+
+## 🧪 Testing
+
+```bash
+# Run all tests
 dotnet test
 
-# Run with hot reload for development
-dotnet watch run --urls=http://localhost:8000
+# Run with coverage
+dotnet test /p:CollectCoverage=true
+
+# Run specific test
+dotnet test --filter "FullyQualifiedName~BookMetadataTests"
 ```
 
-### Mock Mode
+## 📊 Technology Stack
 
-For development and testing without Azure Storage, the application automatically uses a mock service when no Azure connection string is configured. The mock service provides sample data for all endpoints.
-
-## Features
-
-- ✅ RESTful API with versioned endpoints (`/v1/`)
-- ✅ CORS support for cross-origin requests
-- ✅ Automatic OpenAPI/Swagger documentation
-- ✅ Health check endpoint for monitoring
-- ✅ Azure Blob Storage integration
-- ✅ In-memory caching for performance
-- ✅ Structured logging with .NET ILogger
-- ✅ Docker containerization
-- ✅ Configuration management with .NET Options pattern
-- ✅ Dependency injection
-- ✅ Error handling with proper HTTP status codes
-
-## Deployment
-
-### Docker
-
-The application includes a multi-stage Dockerfile optimized for production:
-
-```dockerfile
-# Build stage uses .NET SDK
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-# ... build steps ...
-
-# Runtime stage uses minimal ASP.NET runtime
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
-# ... runtime configuration ...
-```
-
-### Azure Container Instances
-
-```bash
-# Deploy to Azure Container Instances
-az container create \
-  --resource-group myResourceGroup \
-  --name bible-api \
-  --image bible-api-dotnet:latest \
-  --environment-variables AppSettings__AzureStorageConnectionString="$CONNECTION_STRING" \
-  --ports 8000
-```
-
-### Kubernetes
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: bible-api
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: bible-api
-  template:
-    metadata:
-      labels:
-        app: bible-api
-    spec:
-      containers:
-      - name: bible-api
-        image: bible-api-dotnet:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: AppSettings__AzureStorageConnectionString
-          valueFrom:
-            secretKeyRef:
-              name: bible-api-secrets
-              key: azure-storage-connection-string
-```
-
-## Technology Stack
-
-- **Framework**: ASP.NET Core 8.0
-- **Language**: C# 12
+- **Framework**: .NET 9.0
+- **Language**: C# 13
+- **Web Framework**: ASP.NET Core
 - **Cloud Storage**: Azure Blob Storage
+- **Database**: Azure SQL (optional)
+- **Caching**: Redis (optional, in-memory by default)
 - **Documentation**: Swagger/OpenAPI
-- **Containerization**: Docker
-- **XML Processing**: System.Xml.Linq
-- **Dependency Injection**: Built-in .NET DI container
-- **Configuration**: .NET Configuration API
-- **Logging**: .NET ILogger
+- **Testing**: xUnit
+- **Container**: Docker (Alpine-based)
+- **IaC**: Terraform
+- **CI/CD**: GitHub Actions (planned)
 
-## Migration from Python
+## 🔧 Configuration
 
-This C# implementation maintains 100% API compatibility with the original Python FastAPI version. All endpoints, response formats, and behaviors are preserved. Key improvements include:
+### appsettings.json
 
-- **Better Performance**: Compiled C# with optimized runtime
-- **Type Safety**: Strong typing throughout the application
-- **Better Tooling**: Rich IDE support and debugging
-- **Enterprise Ready**: Built on proven .NET platform
-- **Memory Efficiency**: Better memory management than Python
-- **Async/Await**: Native async support throughout
+```json
+{
+  "AppSettings": {
+    "AzureStorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=...",
+    "AzureContainerName": "bible-translations"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information"
+    }
+  }
+}
+```
 
-## Contributing
+### Development Mode
+
+When `AzureStorageConnectionString` is not configured in Development environment, the API uses mock data with sample verses.
+
+## 📚 Bible Data Format
+
+The API expects Bible translations in XML format (USFX/OSIS) stored in Azure Blob Storage:
+
+```
+bible-translations/
+├── kjv.xml
+├── asv.xml
+├── web.xml
+└── ...
+```
+
+## 🔒 Security
+
+- ✅ HTTPS enforced in production
+- ✅ Non-root user in Docker
+- ✅ CORS configured
+- ✅ Health checks enabled
+- ✅ Secrets via environment variables
+- ✅ Input validation on all endpoints
+
+## 📈 Performance
+
+- **In-memory caching** with configurable TTL
+- **Response compression** (Gzip)
+- **Async/await** throughout
+- **Minimal allocations** with modern C#
+- **Alpine-based images** for small container size (~180MB)
+
+## 🚀 Roadmap
+
+- [ ] Full-text search with Azure Cognitive Search
+- [ ] Redis distributed caching
+- [ ] Rate limiting middleware
+- [ ] GraphQL API
+- [ ] WebSocket support for real-time updates
+- [ ] Mobile SDK (Xamarin/MAUI)
+- [ ] Verse comparison across translations
+- [ ] Audio verse playback
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
 
-## License
+## 📄 License
 
-- **Source Code**: MIT License (see `LICENSE`)
-- **Bible Translations**: All Bible translations are public domain
-- **Original Python Implementation**: © 2014 Tim Morgan (retained per MIT requirements)
-- **C# Port**: © 2025 Andrei Demit
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file.
 
-## Support
+Bible texts are sourced from public domain translations. See [DATA_LICENSES.md](docs/DATA_LICENSES.md) for attribution.
 
-- 📖 **Documentation**: Available at `/swagger` endpoint
-- 🐛 **Issues**: [GitHub Issues](https://github.com/andreidemit/bible_api/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/andreidemit/bible_api/discussions)
+## 💬 Support
+
+- 📧 **Issues**: [GitHub Issues](https://github.com/andreidemit/bible_api/issues)
+- 📖 **Documentation**: See `/docs` folder
+- 🐛 **Bug Reports**: Use issue templates
+
+## 🙏 Acknowledgments
+
+- Original Python implementation contributors
+- Public domain Bible translation providers
+- .NET and Azure communities
 
 ---
 
-**Note**: This is a complete rewrite in C# .NET Core while maintaining full backward compatibility with the original Python FastAPI version. Both implementations can be used interchangeably.
-
-# Deprecated
-
-Content merged into root README.md. Use `README.md` for all documentation.
+**Built with ❤️ using .NET 9**

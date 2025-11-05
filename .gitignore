@@ -94,9 +94,16 @@ wwwroot/node_modules/
 #############################
 # Project specific
 #############################
-# (Keep SQL scripts – NOT ignored)
-static/*
-!static/favicon.svg
+# Terraform
+infrastructure/terraform/.terraform/
+infrastructure/terraform/*.tfstate
+infrastructure/terraform/*.tfstate.*
+infrastructure/terraform/*.tfplan
+infrastructure/terraform/.terraform.lock.hcl
+infrastructure/terraform/terraform.tfvars
+
+# Docker
+docker/.env
 
 # Prevent committing local data/license artifacts if generated
 DATA_LICENSES.generated.md

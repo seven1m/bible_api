@@ -1,4 +1,0 @@
-# Deprecated docker-compose file from Python version intentionally left blank.
-# Use Dockerfile (ASP.NET Core) to build and run container.
-version: "3.8"
-services: {}

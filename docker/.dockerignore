@@ -1,0 +1,64 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs
+**/bin/
+**/obj/
+**/out/
+
+# NuGet
+**/*.nupkg
+**/*.snupkg
+**/packages/
+**/.nuget/
+
+# Test results
+**/TestResults/
+**/*.trx
+
+# Documentation
+**/*.md
+!README.md
+
+# Docker
+**/Dockerfile*
+**/docker-compose*
+**/.dockerignore
+
+# Infrastructure
+infrastructure/terraform/.terraform/
+infrastructure/terraform/*.tfstate*
+infrastructure/terraform/.terraform.lock.hcl
+
+# Environment files
+**/.env
+**/.env.*
+!**/.env.example
+
+# Temporary files
+**/tmp/
+**/temp/
+**/*.tmp
+**/*.temp
+**/*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node (if any frontend tools)
+**/node_modules/
+**/npm-debug.log
+
+# Static assets (they're in wwwroot)
+static/

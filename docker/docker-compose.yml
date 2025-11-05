@@ -1,0 +1,148 @@
+version: '3.9'
+
+services:
+  # Bible API - Main Application
+  bible-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
+    image: bible-api:latest
+    container_name: bible-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8000
+      - AppSettings__AzureStorageConnectionString=${AZURE_STORAGE_CONNECTION_STRING:-UseDevelopmentStorage=true}
+      - AppSettings__AzureContainerName=bible-translations
+      - ConnectionStrings__BibleDatabase=Server=sqlserver;Database=BibleDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true;
+      - ConnectionStrings__Redis=redis:6379
+    networks:
+      - bible-network
+    depends_on:
+      redis:
+        condition: service_healthy
+      sqlserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Redis - Distributed Cache
+  redis:
+    image: redis:7-alpine
+    container_name: bible-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - bible-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # SQL Server - Database
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: bible-sqlserver
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd
+      - MSSQL_PID=Developer
+      - MSSQL_COLLATION=SQL_Latin1_General_CP1_CI_AS
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+      - ../infrastructure/sql:/docker-entrypoint-initdb.d:ro
+    networks:
+      - bible-network
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -Q "SELECT 1" -C || exit 1
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  # Swagger UI - API Documentation
+  swagger-ui:
+    image: swaggerapi/swagger-ui:latest
+    container_name: bible-swagger
+    ports:
+      - "8080:8080"
+    environment:
+      - SWAGGER_JSON_URL=http://bible-api:8000/swagger/v1/swagger.json
+      - BASE_URL=/swagger
+    networks:
+      - bible-network
+    depends_on:
+      - bible-api
+    restart: unless-stopped
+
+  # Azure Storage Emulator (Azurite) - for local development
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: bible-azurite
+    ports:
+      - "10000:10000"  # Blob service
+      - "10001:10001"  # Queue service
+      - "10002:10002"  # Table service
+    volumes:
+      - azurite-data:/data
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --loose
+    networks:
+      - bible-network
+    restart: unless-stopped
+
+  # Adminer - Database Management UI (optional)
+  adminer:
+    image: adminer:latest
+    container_name: bible-adminer
+    ports:
+      - "8081:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=sqlserver
+    networks:
+      - bible-network
+    depends_on:
+      - sqlserver
+    restart: unless-stopped
+
+  # Redis Commander - Redis Management UI (optional)
+  redis-commander:
+    image: ghcr.io/joeferner/redis-commander:latest
+    container_name: bible-redis-commander
+    ports:
+      - "8082:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    networks:
+      - bible-network
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+networks:
+  bible-network:
+    driver: bridge
+    name: bible-network
+
+volumes:
+  sqlserver-data:
+    name: bible-sqlserver-data
+  redis-data:
+    name: bible-redis-data
+  azurite-data:
+    name: bible-azurite-data

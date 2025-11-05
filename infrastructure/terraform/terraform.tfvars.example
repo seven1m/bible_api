@@ -1,0 +1,28 @@
+# Copy this file to terraform.tfvars and update with your values
+# terraform.tfvars is gitignored for security
+
+project_name        = "bibleapi"
+environment         = "dev"
+location            = "eastus"
+blob_container_name = "bible-translations"
+
+# Set to true if you want to create SQL database
+create_sql_database = false
+
+# Only required if create_sql_database = true
+sql_admin_username = "sqladmin"
+sql_admin_password = "YourStrongPassword123!"
+
+# Container Registry SKU (Basic, Standard, Premium)
+acr_sku = "Basic"
+
+# Docker image name
+docker_image_name = "bible-api:latest"
+
+# Tags
+tags = {
+  Project     = "Bible API"
+  Environment = "Development"
+  ManagedBy   = "Terraform"
+  Owner       = "DevOps Team"
+}
