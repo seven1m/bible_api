@@ -19,8 +19,8 @@ DB = Sequel.connect(ENV.fetch('DATABASE_URL').sub(%r{mysql://}, 'mysql2://'), en
 use Rack::Attack
 Rack::Attack.cache.store = Rack::Attack::StoreProxy::RedisStoreProxy.new(REDIS)
 
-RACK_ATTACK_LIMIT = 15
-RACK_ATTACK_PERIOD = 30
+RACK_ATTACK_LIMIT = ENV.fetch('RACK_ATTACK_LIMIT', 15).to_i
+RACK_ATTACK_PERIOD = ENV.fetch('RACK_ATTACK_PERIOD', 30).to_i
 
 Rack::Attack.throttle('requests by ip', limit: RACK_ATTACK_LIMIT, period: RACK_ATTACK_PERIOD) { |request| request.ip }
 
