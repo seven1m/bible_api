@@ -1,76 +1,113 @@
+GIT
+  remote: https://github.com/seven1m/bible_ref.git
+  revision: de4065036cfb4d3df3b69e592c8d654239d325da
+  specs:
+    bible_ref (2.0.0)
+      parslet (~> 1.6)
+
 GEM
   remote: https://rubygems.org/
   specs:
-    base64 (0.2.0)
+    base64 (0.3.0)
     bible_parser (1.1.2)
       nokogiri (>= 1.6.0)
-    bible_ref (1.6.0)
-      parslet (~> 1.6)
-    bigdecimal (3.1.7)
-    connection_pool (2.4.1)
-    dotenv (3.1.0)
-    multi_json (1.15.0)
-    mustermann (3.0.0)
+    bigdecimal (3.3.1)
+    connection_pool (2.5.5)
+    diff-lcs (1.6.2)
+    dotenv (3.1.8)
+    logger (1.7.0)
+    mini_portile2 (2.8.9)
+    multi_json (1.17.0)
+    mustermann (3.0.4)
       ruby2_keywords (~> 0.0.1)
-    mysql2 (0.5.6)
-    nio4r (2.7.1)
-    nokogiri (1.16.4-x86_64-darwin)
+    mysql2 (0.5.7)
+      bigdecimal
+    nio4r (2.7.5)
+    nokogiri (1.18.10)
+      mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
-    nokogiri (1.16.4-x86_64-linux)
+    nokogiri (1.18.10-x86_64-linux-gnu)
       racc (~> 1.4)
     parslet (1.8.2)
-    puma (6.4.2)
+    prettier_print (1.2.1)
+    puma (7.1.0)
       nio4r (~> 2.0)
-    racc (1.7.3)
-    rack (3.0.10)
-    rack-attack (6.7.0)
+    racc (1.8.1)
+    rack (3.2.4)
+    rack-attack (6.8.0)
       rack (>= 1.0, < 4)
-    rack-protection (4.0.0)
+    rack-protection (4.2.1)
       base64 (>= 0.1.0)
+      logger (>= 1.6.0)
       rack (>= 3.0.0, < 4)
-    rack-session (2.0.0)
+    rack-session (2.1.1)
+      base64 (>= 0.1.0)
       rack (>= 3.0.0)
-    rake (13.2.1)
-    redis (5.2.0)
+    rack-test (2.2.0)
+      rack (>= 1.3)
+    rackup (2.2.1)
+      rack (>= 3)
+    rake (13.3.1)
+    redis (5.4.1)
       redis-client (>= 0.22.0)
-    redis-client (0.22.0)
+    redis-client (0.26.1)
       connection_pool
+    rspec (3.13.2)
+      rspec-core (~> 3.13.0)
+      rspec-expectations (~> 3.13.0)
+      rspec-mocks (~> 3.13.0)
+    rspec-core (3.13.6)
+      rspec-support (~> 3.13.0)
+    rspec-expectations (3.13.5)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-mocks (3.13.7)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-support (3.13.6)
     ruby2_keywords (0.0.5)
-    sequel (5.79.0)
+    sequel (5.98.0)
       bigdecimal
-    sinatra (4.0.0)
+    sinatra (4.2.1)
+      logger (>= 1.6.0)
       mustermann (~> 3.0)
       rack (>= 3.0.0, < 4)
-      rack-protection (= 4.0.0)
+      rack-protection (= 4.2.1)
       rack-session (>= 2.0.0, < 3)
       tilt (~> 2.0)
-    sinatra-contrib (4.0.0)
+    sinatra-contrib (4.2.1)
       multi_json (>= 0.0.2)
       mustermann (~> 3.0)
-      rack-protection (= 4.0.0)
-      sinatra (= 4.0.0)
+      rack-protection (= 4.2.1)
+      sinatra (= 4.2.1)
       tilt (~> 2.0)
-    tilt (2.3.0)
+    syntax_tree (6.3.0)
+      prettier_print (>= 1.2.0)
+    tilt (2.6.1)
 
 PLATFORMS
-  x86_64-darwin-22
+  ruby
   x86_64-linux
 
 DEPENDENCIES
   bible_parser
-  bible_ref
+  bible_ref!
   dotenv
   mysql2
   puma
   rack-attack
+  rack-test
+  rackup
   rake
   redis
+  rspec
   sequel
   sinatra
   sinatra-contrib
+  syntax_tree
 
 RUBY VERSION
-   ruby 3.2.3p157
+   ruby 3.3.9p170
 
 BUNDLED WITH
-   2.5.9
+   2.6.2

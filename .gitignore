@@ -5,3 +5,4 @@ config/newrelic.yml
 .env
 
 vendor/bundle
+/bible_ref

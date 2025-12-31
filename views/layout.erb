@@ -6,6 +6,15 @@
       dd { margin: 0 0 15px 0; }
       table { border-collapse: collapse; }
       th, td { text-align: left; border: 1px solid #ccc; padding: 5px; }
+      dt { font-weight: bold; }
+      dd { margin-left: 20px; }
+      h2 { margin-top: 0; }
+      .section-container { display: flex; flex-direction: column; gap: 20px; margin-bottom: 25px; }
+      section { padding: 20px; background: #eee; border: 1px solid #ccc; }
+      @media (min-width: 1000px) {
+        .section-container { flex-direction: row; }
+        section { flex: 1; }
+      }
     </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
   </head>
