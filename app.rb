@@ -7,8 +7,8 @@ require 'rack/attack'
 require 'redis'
 require 'sinatra/reloader'
 
-require 'dotenv'
-Dotenv.load
+# require 'dotenv'
+# Dotenv.load
 
 REDIS = Redis.new(url: ENV.fetch('REDIS_URL'))
 
@@ -139,6 +139,7 @@ end
 get '/data' do
   content_type 'application/json', charset: 'utf-8'
   headers CORS_HEADERS
+  cache_control :public, max_age: 2_592_000
 
   host = request.base_url
   translations =
@@ -151,6 +152,7 @@ end
 get '/data/:translation' do
   content_type 'application/json', charset: 'utf-8'
   headers CORS_HEADERS
+  cache_control :public, max_age: 2_592_000
 
   host = request.base_url
   translation = get_translation
@@ -166,6 +168,7 @@ end
 get '/data/:translation/random' do
   content_type 'application/json', charset: 'utf-8'
   headers CORS_HEADERS
+  cache_control :public, max_age: 2_592_000
 
   translation = get_translation
   verse = random_verse(translation:).slice(:book_id, :book, :chapter, :verse, :text)
@@ -176,6 +179,7 @@ end
 get '/data/:translation/random/:book_id' do
   content_type 'application/json', charset: 'utf-8'
   headers CORS_HEADERS
+  cache_control :public, max_age: 2_592_000
 
   translation = get_translation
 
@@ -203,6 +207,7 @@ end
 get '/data/:translation/:book_id' do
   content_type 'application/json', charset: 'utf-8'
   headers CORS_HEADERS
+  cache_control :public, max_age: 2_592_000
 
   host = request.base_url
   translation = get_translation
@@ -225,6 +230,7 @@ end
 get '/data/:translation/:book_id/:chapter' do
   content_type 'application/json', charset: 'utf-8'
   headers CORS_HEADERS
+  cache_control :public, max_age: 2_592_000
 
   translation = get_translation
   verses =
@@ -248,6 +254,7 @@ end
 get '/:ref' do
   content_type 'application/json', charset: 'utf-8'
   headers CORS_HEADERS
+  cache_control :public, max_age: 2_592_000
   ref_string = params[:ref].tr('+', ' ')
   display_verse_from(ref_string)
 end
