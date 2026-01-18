@@ -6,6 +6,7 @@ require 'logger'
 require 'rack/attack'
 require 'redis'
 require 'sinatra/reloader'
+require_relative './lib/abuse_middleware'
 
 require 'dotenv'
 Dotenv.load
@@ -23,6 +24,8 @@ RACK_ATTACK_LIMIT = ENV.fetch('RACK_ATTACK_LIMIT', 15).to_i
 RACK_ATTACK_PERIOD = ENV.fetch('RACK_ATTACK_PERIOD', 30).to_i
 
 Rack::Attack.throttle('requests by ip', limit: RACK_ATTACK_LIMIT, period: RACK_ATTACK_PERIOD) { |request| request.ip }
+
+use Rack::AbuseMiddleware, redis: REDIS, limit: 10, window: 30, block_time: 3600
 
 CORS_HEADERS = {
   'Access-Control-Allow-Origin' => '*',
