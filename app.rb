@@ -257,15 +257,31 @@ end
 
 def display_verse_from(ref_string)
   translation = get_translation
-  # someone DOSing us
-  if ref_string =~ /^john.1,2,3,4,5,6,7,8,9,10$/
-    p request.env if rand(100) < 2
+
+  if !ref_string.include?(':') && ref_string.match?(/,|-/)
     status 400
-    return 'error'
+    return(
+      jsonp(
+        error: 'too many chapters',
+        detail: 'You cannot fetch more than one whole chapter at once.',
+        why: 'Because people are abusing my server. :-(',
+      )
+    )
   end
+
   ref = BibleRef::Reference.new(ref_string, language: translation[:language_code], single_chapter_book_matching:)
   if (ranges = ref.ranges)
-    if (verses = get_verses(ranges, translation[:id]))
+    flattened = ranges.flatten
+    number_of_chapters = flattened.last[:chapter] - flattened.first[:chapter] + 1
+    if number_of_chapters > 2
+      status 400
+      response = {
+        error: 'too many chapters',
+        detail:
+          'You can use ranges across a single chapter boundary, but not more than one. For example, John 3:16-4:1 is fine, but John 3:16-5:1 is not.',
+        why: 'Because people are abusing my server. :-(',
+      }
+    elsif (verses = get_verses(ranges, translation[:id]))
       response = render_response(verses: verses, ref: ref.normalize, translation: translation)
     else
       status 404
