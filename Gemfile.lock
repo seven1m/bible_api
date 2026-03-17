@@ -23,10 +23,10 @@ GEM
     mysql2 (0.5.7)
       bigdecimal
     nio4r (2.7.5)
-    nokogiri (1.18.10)
+    nokogiri (1.19.1)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
-    nokogiri (1.18.10-x86_64-linux-gnu)
+    nokogiri (1.19.1-x86_64-linux-gnu)
       racc (~> 1.4)
     parslet (1.8.2)
     prettier_print (1.2.1)
