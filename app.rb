@@ -203,6 +203,24 @@ get '/data/:translation/random/:book_id' do
   { translation: translation_as_json(translation), random_verse: verse }.to_json
 end
 
+get '/data/:translation/verse_of_day' do
+  content_type 'application/json', charset: 'utf-8'
+  headers CORS_HEADERS
+
+  translation = get_translation
+  total = DB['select count(*) as count from verses where translation_id = ?', translation[:id]].first[:count]
+  verse_index = (Date.today.yday * 1_000_003) % total
+  verse =
+    DB[
+      'select book_id, book, chapter, verse, text from verses where translation_id = ? order by id limit 1 offset ?',
+      translation[:id],
+      verse_index
+    ].first
+  halt 404, jsonp(error: 'no verse found') unless verse
+
+  { translation: translation_as_json(translation), verse: verse, date: Date.today.to_s }.to_json
+end
+
 get '/data/:translation/:book_id' do
   content_type 'application/json', charset: 'utf-8'
   headers CORS_HEADERS
@@ -243,6 +261,30 @@ get '/data/:translation/:book_id/:chapter' do
   { translation: translation_as_json(translation), verses: }.to_json
 end
 
+get '/search' do
+  content_type 'application/json', charset: 'utf-8'
+  headers CORS_HEADERS
+
+  query = params[:q].to_s.strip
+  halt 400, jsonp(error: 'query parameter q required (minimum 3 characters)') if query.length < 3
+
+  translation = get_translation
+  limit = params[:limit].to_i
+  limit = 20 unless (1..50).cover?(limit)
+  page = [params[:page].to_i, 1].max
+
+  verses =
+    DB[
+      'select book_id, book, chapter, verse, text from verses where translation_id = :translation_id and text like :pattern order by book_num, chapter, verse limit :limit offset :offset',
+      translation_id: translation[:id],
+      pattern: "%#{query}%",
+      limit: limit,
+      offset: (page - 1) * limit
+    ].to_a
+
+  { translation: translation_as_json(translation), query: query, verses: verses, page: page, limit: limit }.to_json
+end
+
 options '/:ref' do
   headers CORS_HEADERS
   200
@@ -252,7 +294,11 @@ get '/:ref' do
   content_type 'application/json', charset: 'utf-8'
   headers CORS_HEADERS
   ref_string = params[:ref].tr('+', ' ')
-  display_verse_from(ref_string)
+  if params[:translations]
+    compare_translations(ref_string)
+  else
+    display_verse_from(ref_string)
+  end
 end
 
 def display_verse_from(ref_string)
@@ -292,6 +338,24 @@ def display_verse_from(ref_string)
     response = { error: 'not found' }
   end
   jsonp response
+end
+
+def compare_translations(ref_string)
+  identifiers = params[:translations].split(',').map(&:strip).first(5)
+  halt 400, jsonp(error: 'specify at least one translation') if identifiers.empty?
+
+  results =
+    identifiers.filter_map do |identifier|
+      t = DB['select * from translations where identifier = ?', identifier].first
+      next unless t
+      ref = BibleRef::Reference.new(ref_string, language: t[:language_code], single_chapter_book_matching: single_chapter_book_matching)
+      next unless (ranges = ref.ranges)
+      verses = get_verses(ranges, t[:id])
+      next unless verses
+      render_response(verses: verses, ref: ref.normalize, translation: t)
+    end
+
+  jsonp(results: results)
 end
 
 def single_chapter_book_matching

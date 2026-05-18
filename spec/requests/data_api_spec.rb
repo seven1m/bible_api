@@ -718,4 +718,41 @@ RSpec.describe 'Data API Endpoints', type: :request do
       expect_cors_headers
     end
   end
+
+  describe 'GET /data/:translation/verse_of_day' do
+    it 'returns a verse with expected structure' do
+      get '/data/web/verse_of_day'
+      expect(last_response).to be_ok
+      expect(last_response.content_type).to include('application/json')
+      expect_cors_headers
+
+      response = json_response
+      expect(response).to have_key('translation')
+      expect(response).to have_key('verse')
+      expect(response).to have_key('date')
+      expect(response['date']).to match(/\d{4}-\d{2}-\d{2}/)
+
+      verse = response['verse']
+      expect(verse).to include('book_id', 'book', 'chapter', 'verse', 'text')
+    end
+
+    it 'returns the same verse for the same day' do
+      get '/data/web/verse_of_day'
+      first = json_response['verse']
+      get '/data/web/verse_of_day'
+      second = json_response['verse']
+      expect(first).to eq(second)
+    end
+
+    it 'works with kjv translation' do
+      get '/data/kjv/verse_of_day'
+      expect(last_response).to be_ok
+      expect(json_response['translation']['identifier']).to eq('kjv')
+    end
+
+    it 'returns 404 for unknown translation' do
+      get '/data/unknown_xyz/verse_of_day'
+      expect(last_response.status).to eq(404)
+    end
+  end
 end

@@ -510,4 +510,94 @@ RSpec.describe 'Bible API', type: :request do
       expect(last_response.content_type).to include('charset=utf-8')
     end
   end
+
+  describe 'GET /search' do
+    it 'returns verses matching the query' do
+      get '/search?q=love'
+      expect(last_response).to be_ok
+      expect(last_response.content_type).to include('application/json')
+      expect_cors_headers
+
+      response = json_response
+      expect(response).to have_key('translation')
+      expect(response).to have_key('query')
+      expect(response).to have_key('verses')
+      expect(response).to have_key('page')
+      expect(response).to have_key('limit')
+      expect(response['query']).to eq('love')
+      expect(response['verses']).to be_an(Array)
+      expect(response['verses']).not_to be_empty
+      expect(response['verses'].first).to include('book_id', 'book', 'chapter', 'verse', 'text')
+    end
+
+    it 'respects translation parameter' do
+      get '/search?q=love&translation=kjv'
+      expect(last_response).to be_ok
+      expect(json_response['translation']['identifier']).to eq('kjv')
+    end
+
+    it 'defaults to 20 results per page' do
+      get '/search?q=the'
+      expect(last_response).to be_ok
+      response = json_response
+      expect(response['limit']).to eq(20)
+      expect(response['verses'].length).to be <= 20
+    end
+
+    it 'respects limit parameter' do
+      get '/search?q=love&limit=5'
+      expect(last_response).to be_ok
+      expect(json_response['verses'].length).to be <= 5
+    end
+
+    it 'returns 400 for queries shorter than 3 characters' do
+      get '/search?q=ab'
+      expect(last_response.status).to eq(400)
+    end
+
+    it 'returns 400 when q is missing' do
+      get '/search'
+      expect(last_response.status).to eq(400)
+    end
+
+    it 'paginates results' do
+      get '/search?q=love&limit=5&page=1'
+      page1 = json_response['verses']
+      get '/search?q=love&limit=5&page=2'
+      page2 = json_response['verses']
+      expect(page1).not_to eq(page2)
+    end
+  end
+
+  describe 'Multi-translation comparison' do
+    it 'returns multiple translations for a verse' do
+      get '/John+3:16?translations=web,kjv'
+      expect(last_response).to be_ok
+      expect(last_response.content_type).to include('application/json')
+
+      response = json_response
+      expect(response).to have_key('results')
+      expect(response['results'].length).to eq(2)
+      identifiers = response['results'].map { |r| r['translation_id'] }
+      expect(identifiers).to include('web', 'kjv')
+    end
+
+    it 'returns single result for one translation' do
+      get '/John+3:16?translations=kjv'
+      expect(last_response).to be_ok
+      expect(json_response['results'].length).to eq(1)
+    end
+
+    it 'skips unknown translations gracefully' do
+      get '/John+3:16?translations=web,unknown_xyz'
+      expect(last_response).to be_ok
+      expect(json_response['results'].length).to eq(1)
+    end
+
+    it 'caps results at 5 translations' do
+      get '/John+3:16?translations=web,kjv,asv,bbe,darby,dra'
+      expect(last_response).to be_ok
+      expect(json_response['results'].length).to be <= 5
+    end
+  end
 end

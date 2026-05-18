@@ -137,6 +137,41 @@ provided by <a href="https://timmorgan.dev">Tim Morgan</a>.</p>
   </section>
 </div>
 
+<h2>Search API</h2>
+
+<p>Search for verses containing a word or phrase across any translation.</p>
+
+<pre><code><%= @host %>/search?q=QUERY[&translation=TRANSLATION][&page=PAGE][&limit=LIMIT]</code></pre>
+
+<dl>
+  <dt><code>q</code></dt>
+  <dd>The search term (minimum 3 characters). Case-insensitive.</dd>
+  <dt><code>translation</code></dt>
+  <dd>Translation identifier (default: WEB).</dd>
+  <dt><code>page</code></dt>
+  <dd>Page number for paginated results (default: 1).</dd>
+  <dt><code>limit</code></dt>
+  <dd>Results per page, between 1 and 50 (default: 20).</dd>
+</dl>
+
+<p>Example: <a href="/search?q=love&translation=kjv">/search?q=love&amp;translation=kjv</a></p>
+
+<h2>Multi-Translation Comparison</h2>
+
+<p>Get the same passage in multiple translations at once by adding a <code>translations</code> parameter (comma-separated, up to 5).</p>
+
+<pre><code><%= @host %>/BOOK+CHAPTER:VERSE?translations=TRANS1,TRANS2,...</code></pre>
+
+<p>Example: <a href="/john+3:16?translations=web,kjv">/john+3:16?translations=web,kjv</a></p>
+
+<h2>Verse of the Day</h2>
+
+<p>Returns a daily verse that changes each day of the year (same verse for all requests on the same day).</p>
+
+<pre><code><%= @host %>/data/TRANSLATION_ID/verse_of_day</code></pre>
+
+<p>Example: <a href="/data/web/verse_of_day">/data/web/verse_of_day</a></p>
+
 <h2>Translations</h2>
 
 <p>Both APIs support these translations:</p>
