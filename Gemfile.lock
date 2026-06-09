@@ -30,7 +30,7 @@ GEM
       racc (~> 1.4)
     parslet (1.8.2)
     prettier_print (1.2.1)
-    puma (7.1.0)
+    puma (7.2.1)
       nio4r (~> 2.0)
     racc (1.8.1)
     rack (3.2.6)
