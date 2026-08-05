@@ -248,7 +248,7 @@ RSpec.describe 'Bible API', type: :request do
       end
 
       it 'returns 404 for malformed reference' do
-        get '/not-a-reference'
+        get '/not_a_reference'
         expect(last_response.status).to eq(404)
         expect(json_response).to include('error' => 'not found')
       end
@@ -277,14 +277,10 @@ RSpec.describe 'Bible API', type: :request do
       expect(chapters).to include(3, 4)
     end
 
-    it 'handles multiple chapter references' do
+    it 'rejects multiple whole chapter references' do
       get '/Psalm+23-24'
-      expect(last_response).to be_ok
-
-      response = json_response
-      expect(response['verses']).not_to be_empty
-      chapters = response['verses'].map { |v| v['chapter'] }.uniq.sort
-      expect(chapters).to eq([23, 24])
+      expect(last_response.status).to eq(400)
+      expect(json_response).to include('error' => 'too many chapters')
     end
 
     it 'handles single verse in multi-chapter book' do

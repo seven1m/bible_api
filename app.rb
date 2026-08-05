@@ -25,7 +25,7 @@ RACK_ATTACK_PERIOD = ENV.fetch('RACK_ATTACK_PERIOD', 30).to_i
 
 Rack::Attack.throttle('requests by ip', limit: RACK_ATTACK_LIMIT, period: RACK_ATTACK_PERIOD) { |request| request.ip }
 
-use Rack::AbuseMiddleware, redis: REDIS, limit: 10, window: 30, block_time: 3600
+use Rack::AbuseMiddleware, redis: REDIS, limit: 10, window: 30, block_time: 3600 unless test?
 
 CORS_HEADERS = {
   'Access-Control-Allow-Origin' => '*',
