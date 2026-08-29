@@ -67,7 +67,7 @@ If you want to host this application yourself, you'll need a Linux server with R
 
    ```
    gem install bundler
-   bundle config --local deployment true # optional, but prefered on a server
+   bundle config --local deployment true # optional, but preferred on a server
    bundle install
    ```
 
