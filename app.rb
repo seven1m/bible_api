@@ -247,6 +247,10 @@ get '/data/:translation/:book_id/:chapter' do
   { translation: translation_as_json(translation), verses: }.to_json
 end
 
+get '/favicon.ico' do
+  status 204
+end
+
 options '/:ref' do
   headers CORS_HEADERS
   200

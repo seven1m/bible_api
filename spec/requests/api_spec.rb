@@ -31,6 +31,14 @@ RSpec.describe 'Bible API', type: :request do
     end
   end
 
+  describe 'GET /favicon.ico' do
+    it 'returns no content instead of a not found response' do
+      get '/favicon.ico'
+      expect(last_response.status).to eq(204)
+      expect(last_response.body).to be_empty
+    end
+  end
+
   describe 'OPTIONS /:ref' do
     it 'returns CORS headers for preflight requests' do
       options '/John+3:16'
