@@ -1,16 +1,11 @@
-GIT
-  remote: https://github.com/seven1m/bible_ref.git
-  revision: de4065036cfb4d3df3b69e592c8d654239d325da
-  specs:
-    bible_ref (2.0.0)
-      parslet (~> 1.6)
-
 GEM
   remote: https://rubygems.org/
   specs:
     base64 (0.3.0)
-    bible_parser (1.1.2)
+    bible_parser (1.1.4)
       nokogiri (>= 1.6.0)
+    bible_ref (2.1.0)
+      parslet (~> 1.6)
     bigdecimal (3.3.1)
     connection_pool (2.5.5)
     diff-lcs (1.6.2)
@@ -90,8 +85,8 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  bible_parser
-  bible_ref!
+  bible_parser (~> 1.1.4)
+  bible_ref (~> 2.1.0)
   dotenv
   mysql2
   puma
@@ -107,7 +102,7 @@ DEPENDENCIES
   syntax_tree
 
 RUBY VERSION
-   ruby 3.4.10p104
+  ruby 3.4.12
 
 BUNDLED WITH
-   4.0.18
+  4.0.18

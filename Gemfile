@@ -1,9 +1,9 @@
 source 'https://rubygems.org'
 
-ruby '3.4.10'
+ruby '3.4.12'
 
-gem 'bible_parser'
-gem 'bible_ref', github: 'seven1m/bible_ref'
+gem 'bible_parser', '~> 1.1.4'
+gem 'bible_ref', '~> 2.1.0'
 gem 'dotenv'
 gem 'mysql2'
 gem 'puma'
