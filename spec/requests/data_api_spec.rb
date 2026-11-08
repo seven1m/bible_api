@@ -41,17 +41,29 @@ RSpec.describe 'Data API Endpoints', type: :request do
       response = json_response
 
       expected_translations = {
+        'cuv' => {
+          name: 'Chinese Union Version',
+          language: 'Chinese (Traditional)',
+        },
+        'cuv-simp' => {
+          name: 'Chinese Union Version',
+          language: 'Chinese (Simplified)',
+        },
         'cherokee' => {
           name: 'Cherokee New Testament',
           language: 'Cherokee',
         },
-        'cuv' => {
-          name: 'Chinese Union Version',
-          language: 'Chinese',
-        },
         'bkr' => {
           name: 'Bible kralická',
           language: 'Czech',
+        },
+        'danish' => {
+          name: 'Danish Bible (OT 1931, NT 1907)',
+          language: 'Danish',
+        },
+        'statenvertaling' => {
+          name: 'Statenvertaling (1637)',
+          language: 'Dutch',
         },
         'asv' => {
           name: 'American Standard Version (1901)',
@@ -59,6 +71,10 @@ RSpec.describe 'Data API Endpoints', type: :request do
         },
         'bbe' => {
           name: 'Bible in Basic English',
+          language: 'English',
+        },
+        'bsb' => {
+          name: 'Berean Standard Bible',
           language: 'English',
         },
         'darby' => {
@@ -69,18 +85,6 @@ RSpec.describe 'Data API Endpoints', type: :request do
           name: 'Douay-Rheims 1899 American Edition',
           language: 'English',
         },
-        'kjv' => {
-          name: 'King James Version',
-          language: 'English',
-        },
-        'web' => {
-          name: 'World English Bible',
-          language: 'English',
-        },
-        'ylt' => {
-          name: 'Young\'s Literal Translation (NT only)',
-          language: 'English',
-        },
         'oeb-cw' => {
           name: 'Open English Bible, Commonwealth Edition',
           language: 'English (UK)',
@@ -89,17 +93,61 @@ RSpec.describe 'Data API Endpoints', type: :request do
           name: 'World English Bible, British Edition',
           language: 'English (UK)',
         },
+        'kjv' => {
+          name: 'King James Version',
+          language: 'English',
+        },
         'oeb-us' => {
           name: 'Open English Bible, US Edition',
           language: 'English (US)',
+        },
+        'web' => {
+          name: 'World English Bible',
+          language: 'English',
+        },
+        'biblia' => {
+          name: 'Finnish Bible',
+          language: 'Finnish',
+        },
+        'luther1912' => {
+          name: 'Luther Bible 1912',
+          language: 'German',
+        },
+        'leningrad' => {
+          name: 'Hebrew Leningrad Codex',
+          language: 'Hebrew',
+        },
+        'karoli' => {
+          name: 'Hungarian Károli Bible',
+          language: 'Hungarian',
+        },
+        'riveduta' => {
+          name: 'Italian Riveduta (Luzzi, 1924)',
+          language: 'Italian',
+        },
+        'kougo' => {
+          name: 'Japanese Kougo (Colloquial)',
+          language: 'Japanese',
+        },
+        'bungo' => {
+          name: 'Japanese Bungo (Classical)',
+          language: 'Japanese',
+        },
+        'korean' => {
+          name: 'Korean Revised Version (1952/1961)',
+          language: 'Korean',
         },
         'clementine' => {
           name: 'Clementine Latin Vulgate',
           language: 'Latin',
         },
-        'almeida' => {
-          name: 'João Ferreira de Almeida',
-          language: 'Portuguese',
+        'norwegian' => {
+          name: 'Norwegian Bible',
+          language: 'Norwegian',
+        },
+        'gdanska' => {
+          name: 'Polish Gdańska Bible',
+          language: 'Polish',
         },
         'rccv' => {
           name: 'Protestant Romanian Corrected Cornilescu Version',
@@ -124,6 +172,22 @@ RSpec.describe 'Data API Endpoints', type: :request do
         'vbl' => {
           name: 'Versión Biblia Libre / Spanish Free Bible Version',
           language: 'Spanish',
+        },
+        'swedish' => {
+          name: 'Swedish Bible',
+          language: 'Swedish',
+        },
+        'swahili' => {
+          name: 'Swahili Bible',
+          language: 'Swahili',
+        },
+        'tagalog' => {
+          name: 'Tagalog Bible (Ang Dating Biblia)',
+          language: 'Tagalog',
+        },
+        'cadman' => {
+          name: 'Vietnamese Cadman Bible 1934',
+          language: 'Vietnamese',
         },
       }
 
@@ -216,6 +280,17 @@ RSpec.describe 'Data API Endpoints', type: :request do
       %w[MAT MRK LUK JHN ACT ROM 1CO 2CO GAL EPH PHP COL 1TH 2TH 1TI 2TI TIT PHM HEB JAS 1PE 2PE 1JN 2JN 3JN JUD REV]
     end
 
+    { 'leningrad' => 39, 'swahili' => 26, 'oeb-cw' => 42, 'oeb-us' => 42 }.each do |translation, count|
+      it "lists only the available books for #{translation}" do
+        get "/data/#{translation}"
+        expect(last_response).to be_ok
+        expect(json_response['books'].length).to eq(count)
+        ids = json_response['books'].map { |book| book['id'] }
+        expect(ids).not_to include('JHN') if translation == 'leningrad'
+        expect(ids).not_to include('GEN', 'PHP') if translation == 'swahili'
+      end
+    end
+
     let(:english_book_names) do
       {
         'GEN' => 'Genesis',
@@ -287,28 +362,40 @@ RSpec.describe 'Data API Endpoints', type: :request do
       }
     end
 
-    # Test full Bible translations (66 books)
+    # Test full Bible translations (66 Protestant books)
     %w[
-      web
-      kjv
+      cuv
+      cuv-simp
+      bkr
+      danish
+      statenvertaling
       asv
       bbe
+      bsb
       darby
       dra
       webbe
-      oeb-cw
-      oeb-us
+      kjv
+      web
+      biblia
+      luther1912
+      karoli
+      riveduta
+      kougo
+      bungo
+      korean
       clementine
-      almeida
+      norwegian
+      gdanska
       rccv
       synodal
-      bkr
-      ylt
-      cuv
       bes
       pddpt
       rv1909
       vbl
+      swedish
+      tagalog
+      cadman
     ].each do |translation|
       it "returns exactly 66 Protestant books for #{translation} translation" do
         get "/data/#{translation}"
@@ -369,7 +456,6 @@ RSpec.describe 'Data API Endpoints', type: :request do
 
     # Test non-English translations have localized names
     {
-      'almeida' => /[áâãçêôõ]/, # Portuguese characters
       'rccv' => /[ăâîșț]/, # Romanian characters
       'synodal' => /[а-я]/, # Cyrillic characters
       'cuv' => /[\u4e00-\u9fff]/, # Chinese characters
@@ -406,7 +492,7 @@ RSpec.describe 'Data API Endpoints', type: :request do
     end
 
     it 'verifies translation metadata consistency' do
-      %w[web kjv cherokee cuv almeida].each do |translation|
+      %w[web kjv cherokee cuv leningrad].each do |translation|
         get "/data/#{translation}"
         expect(last_response).to be_ok
 

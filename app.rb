@@ -131,7 +131,10 @@ get '/' do
     jsonp(render_response(verses: [verse], ref: ref, translation:))
   else
     @translations = DB['select id, identifier, language, name from translations order by language, name']
-    books = DB["select translation_id, book from verses where book_id = 'JHN' group by translation_id, book"]
+    books =
+      DB[
+        "select distinct translation_id, book_id, book from verses where book_id in ('GEN', 'JHN') and chapter = 3 and verse = 16 order by book_id"
+      ]
     @books = books.each_with_object({}) { |book, hash| hash[book[:translation_id]] = book[:book] }
     https = request.env['HTTP_X_FORWARDED_PROTO'] =~ /https/
     @host = request.base_url
@@ -157,9 +160,10 @@ get '/data/:translation' do
 
   host = request.base_url
   translation = get_translation
+  available_books = DB[:verses].where(translation_id: translation[:id]).select(:book_id).distinct.select_map(:book_id)
   books =
     BibleRef::LANGUAGES[translation[:language_code]].new.books.filter_map do |id, config|
-      next unless protestant_books.include?(id)
+      next unless protestant_books.include?(id) && available_books.include?(id)
       { id:, name: config[:name], url: "#{host}/data/#{translation.fetch(:identifier)}/#{id}" }
     end
 
@@ -312,9 +316,9 @@ def render_response(verses:, ref:, translation:)
   vn = params[:verse_numbers]
   verse_text =
     if vn == 'true'
-      verses.map { |v| '(' + v[:verse].to_s + ') ' + v[:text] }.join
+      verses.map { |v| '(' + v[:verse].to_s + ') ' + v[:text] }.join(' ')
     else
-      verses.map { |v| v[:text] }.join
+      verses.map { |v| v[:text] }.join(' ')
     end
   {
     reference: ref,
