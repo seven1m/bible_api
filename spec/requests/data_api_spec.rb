@@ -149,6 +149,34 @@ RSpec.describe 'Data API Endpoints', type: :request do
           name: 'Polish Gdańska Bible',
           language: 'Polish',
         },
+        'arc1911' => {
+          name: 'Almeida Revista e Corrigida (Lisbon, 1911)',
+          language: 'Portuguese',
+        },
+        'bdl' => {
+          name: 'Bíblia Desbloqueada Literal',
+          language: 'Portuguese (Brazil)',
+        },
+        'blivre' => {
+          name: 'Bíblia Livre (Textus Receptus, February 2018)',
+          language: 'Portuguese (Brazil)',
+        },
+        'blt' => {
+          name: 'Bíblia Livre Para Todos (New Testament)',
+          language: 'Portuguese (Brazil)',
+        },
+        'bpm' => {
+          name: 'Bíblia Portuguesa Mundial',
+          language: 'Portuguese (Brazil)',
+        },
+        'onbv' => {
+          name: 'Biblica® Open Nova Bíblia Viva 2007',
+          language: 'Portuguese (Brazil)',
+        },
+        'tftp' => {
+          name: 'A Bíblia Sagrada, Tradução para Tradutores (New Testament)',
+          language: 'Portuguese (Brazil)',
+        },
         'rccv' => {
           name: 'Protestant Romanian Corrected Cornilescu Version',
           language: 'Romanian',
